@@ -1,0 +1,112 @@
+# Sceret
+multi-gke-ops-aa82224eed72.json
+multi-gke-ops-*.json
+langgraph-agent/agent/shared
+nexus/shared
+loadgen/shared
+analysis/shared
+scraping-job/shared
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Xcode
+*.xcuserdatad
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST   
+.gradio
+
+
+# Go
+/bin/
+/pkg/
+*.exe
+*.test
+*.prof
+
+# General
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+\#*\#
+.#[._]
+*.out
+tmp
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Key and password files
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+*.passwd
+*.kdbx
+
+# Junk files
+.Trash/
+.Spotlight-V100/
+.fseventsd/
+.Trashes
+
+# Specific to your project
+# Add any other files or directories that you want to ignore
+rrd/populate-db
+
+
+#Credential
+application_default_credentials.json
+test.py
+rel.sh
+cr.yaml
+release/
+
+.langgraph_api
+.requirements.txt
+deployment_metadata.json
+
+
+
