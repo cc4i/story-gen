@@ -23,6 +23,10 @@ def update_storyboard_visibility(count):
     # The function must return an update for each row component
     return [gr.update(visible=i < int(count)) for i in range(12)]
 
+def update_character_visibility(count):
+    # The function must return an update for each character row component
+    return [gr.update(visible=i < int(count)) for i in range(6)]
+
 def show_images_and_prompts(number_of_scenes):
     MAX_SCENES = 12
     path = "tmp/images/default"

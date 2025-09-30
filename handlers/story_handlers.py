@@ -1,11 +1,13 @@
 
 import json
+import os
 from utils.llm import call_llm
 from utils.logger import logger
 from utils.prompt_templates import generate_story_prompt, develop_story_prompt
 from utils.gen_image import gen_images
 from PIL import Image
 from io import BytesIO
+from handlers.ui_handlers import check_folder
 
 def generate_story(idea):
     system_instruction, prompt = generate_story_prompt(idea)
@@ -20,6 +22,46 @@ def generate_story(idea):
 
     return characters, setting, plot
 
+def generate_character_images(number_of_characters, character_names, character_descriptions, style):
+    """Generate images for each character based on their descriptions"""
+    check_folder("tmp/images/characters")
+
+    generated_images = []
+    for i in range(int(number_of_characters)):
+        name = character_names[i] if i < len(character_names) else ""
+        desc = character_descriptions[i] if i < len(character_descriptions) else ""
+
+        if not name or not desc:
+            generated_images.append(None)
+            continue
+
+        # Create character image prompt
+        char_prompt = f"{name}: {desc}. Style: {style}. Full body portrait, character design sheet."
+
+        try:
+            generated_image_response = gen_images(
+                model_id="imagen-4.0-generate-preview-06-06",
+                prompt=char_prompt,
+                negative_prompt="blurry, low quality, distorted",
+                number_of_images=1,
+                aspect_ratio="1:1",
+                is_enhance="yes"
+            )[0]
+
+            image = Image.open(BytesIO(generated_image_response.image.image_bytes))
+            image_path = f"tmp/images/characters/character_{i+1}.png"
+            image.save(image_path)
+            generated_images.append(image_path)
+        except Exception as e:
+            logger.error(f"Error generating image for character {name}: {e}")
+            generated_images.append(None)
+
+    # Pad with None to match max characters (6)
+    while len(generated_images) < 6:
+        generated_images.append(None)
+
+    return generated_images
+
 def develope_story(characters, setting, plot, number_of_scenes, duration_per_scene, style):
     clear_temp_files("tmp/images/default", ".*")
 
@@ -31,24 +73,24 @@ def develope_story(characters, setting, plot, number_of_scenes, duration_per_sce
     with open("tmp/images/default/story.json", "w") as f:
         f.write(string_response)
     json_response = json.loads(string_response)
-    
+
     for i, scene in enumerate(json_response, 1):
         image_prompt = {
             "title": scene["title"],
-            "description": scene["description"], 
+            "description": scene["description"],
             "characters": scene["characters"],
             "image_prompt": scene["image_prompt"]
         }
-        
+
         generated_image_response = gen_images(
             model_id="imagen-4.0-generate-preview-06-06",
             prompt=json.dumps(image_prompt),
             negative_prompt="",
             number_of_images=1,
-            aspect_ratio="16:9", 
+            aspect_ratio="16:9",
             is_enhance="yes"
         )[0]
-        
+
         image = Image.open(BytesIO(generated_image_response.image.image_bytes))
         image.save(f"tmp/images/default/scene_{i}.png")
         video_prompt_file = f"tmp/images/default/scene_prompt_{i}.txt"

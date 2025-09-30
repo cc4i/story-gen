@@ -7,14 +7,14 @@ import os
 from datetime import datetime
 
 # Create logs directory if it doesn't exist
-os.makedirs("logs", exist_ok=True)
+os.makedirs("tmp/logs", exist_ok=True)
 
 # Configure logging
 logger = logging.getLogger("media_gen")
 logger.setLevel(logging.INFO)
 
 # Create file handler
-log_file = f"logs/media_gen_{datetime.now().strftime('%Y%m%d')}.log"
+log_file = f"tmp/logs/media_gen_{datetime.now().strftime('%Y%m%d')}.log"
 file_handler = logging.FileHandler(log_file)
 file_handler.setLevel(logging.INFO)
 
