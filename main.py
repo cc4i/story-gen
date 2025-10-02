@@ -50,9 +50,14 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
                 characters_text += f"{names[i]}: {descs[i]}\n"
         return characters_text
 
+    def generate_character_images_helper(*args):
+        character_names = args[1:7]
+        character_descriptions = args[7:13]
+        return generate_character_images(args[0], character_names, character_descriptions, args[13])
+
     # Generate character images
     btn_generate_characters.click(
-        generate_character_images,
+        generate_character_images_helper,
         inputs=[sl_number_of_characters] + character_names + character_descriptions + [dd_style],
         outputs=character_images
     )

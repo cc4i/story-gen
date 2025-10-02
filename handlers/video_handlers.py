@@ -4,6 +4,7 @@ import random
 from utils.gen_video import upload_image, image_to_video, download_videos
 from models.config import VEO_STORAGE_BUCKET
 from utils.video_ts import merge_videos_moviepy
+from handlers.ui_handlers import clear_temp_files
 
 def generate_video(chosen_veo_model_id, is_generate_audio):
     clear_temp_files("tmp/default", ".mp4")

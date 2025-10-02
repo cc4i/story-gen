@@ -7,7 +7,7 @@ from utils.prompt_templates import generate_story_prompt, develop_story_prompt
 from utils.gen_image import gen_images
 from PIL import Image
 from io import BytesIO
-from handlers.ui_handlers import check_folder
+from handlers.ui_handlers import check_folder, clear_temp_files
 
 def generate_story(idea):
     system_instruction, prompt = generate_story_prompt(idea)

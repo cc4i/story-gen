@@ -40,6 +40,7 @@ def save_binary_file(file_name, data):
 
 def generate_audio_by_gemini(message, gender, order, character_name, start_time, voice_name, model_id="gemini-2.5-pro-preview-tts"):
     client = genai.Client(
+        api_key=GEMINI_API_KEY
         # vertexai=True, project="cloud-llm-preview3", location="us-central1"
     )
     model = model_id

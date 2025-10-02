@@ -6,6 +6,9 @@ import gradio as gr
 from utils.ce_audio import generate_audio_by_gemini, choose_random_voice
 from utils.logger import logger
 import json
+from handlers.ui_handlers import clear_temp_files
+from utils.video_ts import merge_audio_at_time
+
 
 def generate_audio():
     clear_temp_files("tmp/default", ".wav")
