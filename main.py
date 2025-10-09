@@ -34,7 +34,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
      cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios,
      storyboard_rows) = visual_storyboard_tab(sl_number_of_scenes)
     
-    short_ingredients, btn_merge_videos, btn_merge_videos_with_audios = short_ingredients_tab()
+    short_ingredients, btn_merge_videos = short_ingredients_tab()
 
     merged_video = big_thing_tab()
 
