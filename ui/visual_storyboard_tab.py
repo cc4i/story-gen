@@ -33,9 +33,9 @@ def visual_storyboard_tab(sl_number_of_scenes):
         )
 
         with gr.Row():
-            veo_model_id = gr.Radio(
+            veo_model_id = gr.Dropdown(
                 label="Model for generating videos",
-                choices=["veo-2.0-generate-001", "veo-3.0-generate-001", "veo-3.0-generate-preview", "veo-3.0-fast-generate-preview"],
+                choices=["veo-3.0-generate-preview", "veo-3.0-fast-generate-preview", "veo-3.0-generate-001", "veo-2.0-generate-001"],
                 value="veo-3.0-generate-preview",
                 interactive=True
             )
