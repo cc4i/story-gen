@@ -24,12 +24,18 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
             gr.Textbox(value="", interactive=False, visible=False)
             gr.Button("Logout", link="/logout", scale=1)
 
-    ta_idea, btn_random_idea, btn_generate_story = idea_tab()
+    ta_idea, dd_style, btn_random_idea, btn_generate_story = idea_tab()
+
     (sl_number_of_characters, character_images, character_names, character_descriptions,
      btn_generate_characters, ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene,
-     dd_style, btn_developing, tb_developed_story) = story_tab()
-    scene_images, scene_texts, scene_audios_dropdown, scene_audios, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows = visual_storyboard_tab(sl_number_of_scenes)
+     btn_developing, tb_developed_story) = story_tab()
+
+    (scene_images, scene_texts, scene_audios_dropdown, scene_audios, veo_model_id,
+     cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios,
+     storyboard_rows) = visual_storyboard_tab(sl_number_of_scenes)
+    
     short_ingredients, btn_merge_videos, btn_merge_videos_with_audios = short_ingredients_tab()
+
     merged_video = big_thing_tab()
 
     # Load the existed images and prompts if any

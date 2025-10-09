@@ -48,7 +48,6 @@ def story_tab():
         with gr.Row():
             sl_number_of_scenes = gr.Slider(label="Number of Scenes", minimum=1, maximum=12, step=1, interactive=True, value=3)
             sl_duration_per_scene = gr.Slider(label="Duration per Scene", minimum=5, maximum=8, step=1, interactive=True, value=8)
-            dd_style = gr.Dropdown(choices=["Studio Ghibli", "Anime", "Photorealistic", "Pencil Sketch", "Oil Painting", "Matte Painting"], label="Style", interactive=True, value="Studio Ghibli")
 
         with gr.Row():
             btn_developing = gr.Button("Developing")
@@ -57,4 +56,4 @@ def story_tab():
 
     return (sl_number_of_characters, character_images, character_names, character_descriptions,
             btn_generate_characters, ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene,
-            dd_style, btn_developing, tb_developed_story)
+            btn_developing, tb_developed_story)
