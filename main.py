@@ -7,7 +7,7 @@ from ui.visual_storyboard_tab import visual_storyboard_tab
 from ui.short_ingredients_tab import short_ingredients_tab
 from ui.big_thing_tab import big_thing_tab
 
-from handlers.story_handlers import generate_story, develope_story, generate_character_images
+from handlers.story_handlers import generate_story, update_story, develope_story, generate_character_images
 from handlers.video_handlers import generate_video, show_generated_videos, show_merged_videos
 from handlers.audio_handlers import generate_audio, show_generated_audios, merge_audios
 from handlers.ui_handlers import show_images_and_prompts, play_audio
@@ -27,8 +27,8 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     ta_idea, dd_style, btn_random_idea, btn_generate_story = idea_tab()
 
     (sl_number_of_characters, character_images, character_names, character_descriptions,
-     btn_generate_characters, ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene,
-     btn_developing, tb_developed_story) = story_tab()
+     btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,
+     sl_duration_per_scene, btn_developing, tb_developed_story) = story_tab()
 
     (scene_images, scene_texts, scene_audios_dropdown, scene_audios, veo_model_id,
      cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios,
@@ -105,10 +105,20 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
                        [desc.strip()] + [""] * 5 + [setting, plot])
         return [1] + [""] * 12 + [setting, plot]
 
+    def update_story_helper(*args):
+        characters = collect_characters_text(*args[:13])
+        return update_story(args[13], characters)
+
     btn_generate_story.click(
         populate_characters,
         inputs=[ta_idea],
         outputs=[sl_number_of_characters] + character_names + character_descriptions + [ta_setting, ta_plot]
+    )
+
+    btn_update_story.click(
+        update_story_helper,
+        inputs=[sl_number_of_characters] + character_names + character_descriptions + [ta_idea],
+        outputs=[ta_setting, ta_plot]
     )
 
 if __name__ == "__main__":

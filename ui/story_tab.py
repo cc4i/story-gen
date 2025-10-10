@@ -37,6 +37,7 @@ def story_tab():
 
         with gr.Row():
             btn_generate_characters = gr.Button("Generate Character Images")
+            btn_update_story = gr.Button("Update Setting and Plot")
 
         # Setting and Plot sections
         with gr.Row():
@@ -55,5 +56,5 @@ def story_tab():
             tb_developed_story = gr.TextArea(label="Developed story")
 
     return (sl_number_of_characters, character_images, character_names, character_descriptions,
-            btn_generate_characters, ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene,
-            btn_developing, tb_developed_story)
+            btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,
+            sl_duration_per_scene, btn_developing, tb_developed_story)

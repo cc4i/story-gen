@@ -3,11 +3,23 @@ import json
 import os
 from utils.llm import call_llm
 from utils.logger import logger
-from utils.prompt_templates import generate_story_prompt, develop_story_prompt
+from utils.prompt_templates import generate_story_prompt, update_story_prompt, develop_story_prompt
 from utils.gen_image import gen_images
 from PIL import Image
 from io import BytesIO
 from handlers.ui_handlers import check_folder, clear_temp_files
+
+def save_characters(characters):
+    with open("tmp/images/characters/characters.txt", "w") as f:
+        f.write(characters)
+
+def save_setting(setting):
+    with open("tmp/images/default/setting.txt", "w") as f:
+        f.write(setting)
+
+def save_plot(plot):
+    with open("tmp/images/default/plot.txt", "w") as f:
+        f.write(plot)
 
 def generate_story(idea):
     system_instruction, prompt = generate_story_prompt(idea)
@@ -20,11 +32,26 @@ def generate_story(idea):
     setting = json_response["setting"]
     plot = json_response["plot"]
 
+    save_characters(characters)
+    save_setting(setting)
+    save_plot(plot)
+
     return characters, setting, plot
 
-def save_characters(characters):
-    with open("tmp/images/characters/characters.txt", "w") as f:
-        f.write(characters)
+def update_story(idea, characters):
+    save_characters(characters)
+
+    system_instruction, prompt = update_story_prompt(idea, characters)
+    history = ""
+    string_response = call_llm(system_instruction, prompt, history, "gemini-2.5-flash")
+    json_response = json.loads(string_response)
+    setting = json_response["setting"]
+    plot = json_response["plot"]
+
+    save_setting(setting)
+    save_plot(plot)
+
+    return setting, plot
 
 def generate_character_images(number_of_characters, characters, style):
     """Generate images for each character based on their descriptions"""
@@ -72,6 +99,8 @@ def develope_story(characters, setting, plot, number_of_scenes, duration_per_sce
     clear_temp_files("tmp/images/default", ".*")
 
     save_characters(characters)
+    save_setting(setting)
+    save_plot(plot)
 
     system_instruction, prompt = develop_story_prompt(characters, setting, plot, number_of_scenes, duration_per_scene, style)
     history = ""

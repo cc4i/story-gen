@@ -23,6 +23,23 @@ def generate_story_prompt(idea: str) -> Tuple[str, str]:
     """
     return system_instruction, prompt
 
+def update_story_prompt(idea: str, characters: str) -> Tuple[str, str]:
+    system_instruction = """
+    You are a creative writer. Your task is to develop a compelling and short story based on the provided Idea and Characters. 
+    """
+    prompt = f"""
+    Idea: {idea}
+    Characters: {characters}
+    
+    """ + """
+    Output as JSON format: 
+    {
+        "setting": "Description of the setting",
+        "plot": "Description of the plot"
+    }
+    """
+    return system_instruction, prompt
+
 def develop_story_prompt(characters: str, setting: str, plot: str, number_of_scenes: int, duration_per_scene: int, style: str) -> Tuple[str, str]:
     system_instruction = """
     You are a creative writer. Your task is to develop a riveting, creative, unique, and meaningful story based on the provided information.Whilst maintaining a cohesive storyline. 
