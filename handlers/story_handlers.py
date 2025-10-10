@@ -22,21 +22,27 @@ def generate_story(idea):
 
     return characters, setting, plot
 
-def generate_character_images(number_of_characters, character_names, character_descriptions, style):
+def save_characters(characters):
+    with open("tmp/images/characters/characters.txt", "w") as f:
+        f.write(characters)
+
+def generate_character_images(number_of_characters, characters, style):
     """Generate images for each character based on their descriptions"""
     check_folder("tmp/images/characters")
 
+    save_characters(characters)
+    characters = characters.split("\n")
+
     generated_images = []
     for i in range(int(number_of_characters)):
-        name = character_names[i] if i < len(character_names) else ""
-        desc = character_descriptions[i] if i < len(character_descriptions) else ""
+        char = characters[i]
 
-        if not name or not desc:
+        if len(char) <= 2:
             generated_images.append(None)
             continue
 
         # Create character image prompt
-        char_prompt = f"{name}: {desc}. Style: {style}. Full body portrait, character design sheet."
+        char_prompt = f"{char}. Style: {style}. Full body portrait, character design sheet."
 
         try:
             generated_image_response = gen_images(
@@ -64,6 +70,8 @@ def generate_character_images(number_of_characters, character_names, character_d
 
 def develope_story(characters, setting, plot, number_of_scenes, duration_per_scene, style):
     clear_temp_files("tmp/images/default", ".*")
+
+    save_characters(characters)
 
     system_instruction, prompt = develop_story_prompt(characters, setting, plot, number_of_scenes, duration_per_scene, style)
     history = ""

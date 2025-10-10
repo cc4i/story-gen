@@ -57,9 +57,8 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         return characters_text
 
     def generate_character_images_helper(*args):
-        character_names = args[1:7]
-        character_descriptions = args[7:13]
-        return generate_character_images(args[0], character_names, character_descriptions, args[13])
+        characters = collect_characters_text(*args[:13])
+        return generate_character_images(args[0], characters, args[13])
 
     # Generate character images
     btn_generate_characters.click(
