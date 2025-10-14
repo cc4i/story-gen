@@ -80,12 +80,11 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
                 # Update visibility and populate input fields with generated script
                 for j in range(len(json_script)):
                     script_rows[i][j][0] = gr.update(visible=True)
-                    script_rows[i][j][1] = gr.update(choices=character_names)
                     script_rows[i][j][1] = gr.update(value=json_script[j]["character"])
                     script_rows[i][j][2] = gr.update(value=json_script[j]["dialogue"])
                     script_rows[i][j][3] = gr.update(value=int(json_script[j]["time"]))
         
-        return [script_rows[i][j][k] for k in range(4) for j in range(3) for i in range(6)]
+        return [script_rows[i][j][k] for k in range(4) for j in range(3) for i in range(12)]
 
 
     # Story development - collect character data first
@@ -103,7 +102,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         develop_with_characters,
         inputs=[sl_number_of_characters] + character_names + character_descriptions +
                [ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_style],
-        outputs=[tb_developed_story] + [script_rows[i][j][k] for k in range(4) for j in range(3) for i in range(6)]
+        outputs=[tb_developed_story] + [script_rows[i][j][k] for k in range(4) for j in range(3) for i in range(12)]
     )
 
     step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)

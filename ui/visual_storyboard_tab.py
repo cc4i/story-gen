@@ -25,10 +25,10 @@ def visual_storyboard_tab(sl_number_of_scenes):
                             rows = []
                             for j in range(max_scripts):
                                 with gr.Row(visible=False) as row:
-                                    dd_char = gr.Dropdown(label=f"Character #{j+1}", choices=character_list, allow_custom_value=True, interactive=True)
+                                    ta_char = gr.TextArea(label=f"Character #{j+1}", interactive=True)
                                     ta_script = gr.TextArea(label=f"Script #{j+1}", interactive=True)
                                     num_start_time = gr.Number(label=f"Start Time #{j+1}", minimum=0, maximum=7, step=1, interactive=True)
-                                    rows.append([row, dd_char, ta_script, num_start_time])
+                                    rows.append([row, ta_char, ta_script, num_start_time])
                             script_rows.append(rows)
 
                     with gr.Row():
