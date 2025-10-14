@@ -1,6 +1,5 @@
 
 import gradio as gr
-from handlers.ui_handlers import update_character_visibility
 
 def story_tab():
     with gr.Tab("2. Story >>"):
@@ -28,13 +27,6 @@ def story_tab():
                     character_names.append(name)
                     character_descriptions.append(desc)
 
-        sl_number_of_characters.change(
-            fn=update_character_visibility,
-            inputs=[sl_number_of_characters],
-            outputs=character_rows,
-            queue=False
-        )
-
         with gr.Row():
             btn_generate_characters = gr.Button("Generate Character Images")
             btn_update_story = gr.Button("Update Setting and Plot")
@@ -55,6 +47,6 @@ def story_tab():
         with gr.Row():
             tb_developed_story = gr.TextArea(label="Developed story")
 
-    return (sl_number_of_characters, character_images, character_names, character_descriptions,
+    return (sl_number_of_characters, character_rows, character_images, character_names, character_descriptions,
             btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,
             sl_duration_per_scene, btn_developing, tb_developed_story)

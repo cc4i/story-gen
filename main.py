@@ -10,7 +10,7 @@ from ui.big_thing_tab import big_thing_tab
 from handlers.story_handlers import generate_story, update_story, develope_story, generate_character_images
 from handlers.video_handlers import generate_video, show_generated_videos, show_merged_videos
 from handlers.audio_handlers import generate_audio, show_generated_audios, merge_audios
-from handlers.ui_handlers import show_images_and_prompts, play_audio
+from handlers.ui_handlers import show_images_and_prompts, play_audio, update_character_visibility
 from utils.video_ts import merge_videos_moviepy
 
 with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
@@ -26,7 +26,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
 
     ta_idea, dd_style, btn_random_idea, btn_generate_story = idea_tab()
 
-    (sl_number_of_characters, character_images, character_names, character_descriptions,
+    (sl_number_of_characters, character_rows, character_images, character_names, character_descriptions,
      btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,
      sl_duration_per_scene, btn_developing, tb_developed_story) = story_tab()
 
@@ -119,6 +119,27 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         update_story_helper,
         inputs=[sl_number_of_characters] + character_names + character_descriptions + [ta_idea],
         outputs=[ta_setting, ta_plot]
+    )
+
+    def update_character_count(number_of_characters, idea):
+        character_rows = update_character_visibility(number_of_characters)
+        characters, setting, plot = generate_story(idea + f" Number of characters: {number_of_characters}")
+        char_lines = [line.strip() for line in characters.split('\n') if line.strip()]
+        character_names, character_descriptions = [], []
+        for line in char_lines:
+            name, desc = line.split(':', 1)
+            character_names.append(name.strip())
+            character_descriptions.append(desc.strip())
+        if number_of_characters < 6:
+            character_names += [""] * (6 - number_of_characters)
+            character_descriptions += [""] * (6 - number_of_characters)
+        return character_rows + character_names + character_descriptions + [setting, plot]
+
+    sl_number_of_characters.change(
+        fn=update_character_count,
+        inputs=[sl_number_of_characters, ta_idea],
+        outputs=character_rows + character_names + character_descriptions + [ta_setting, ta_plot],
+        queue=False
     )
 
 if __name__ == "__main__":
