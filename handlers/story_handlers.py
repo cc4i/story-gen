@@ -72,6 +72,7 @@ def generate_character_images(*args):
         args[25]: style (str)
     """
     check_folder("tmp/default/characters")
+    clear_temp_files("tmp/default/characters", ".*")
 
     # Parse arguments
     number_of_characters = int(args[0])
@@ -155,8 +156,9 @@ def developing_story(*args):
             character_image_dict[character_names[i]]=character_images[i]
 
     # Clear old video files
-    clear_temp_files("tmp/default/videos", ".*")
     check_folder("tmp/default/videos")
+    clear_temp_files("tmp/default/videos", ".*")
+
 
     # Save the story data
     save_characters(characters)
