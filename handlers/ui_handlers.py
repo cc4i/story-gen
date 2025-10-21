@@ -1,6 +1,7 @@
 
 import gradio as gr
 import os
+import json
 
 def check_folder(path):
     # check folder tmp/ and subfolder tmp/images/default
@@ -27,9 +28,61 @@ def update_character_visibility(count):
     # The function must return an update for each character row component
     return [gr.update(visible=i < int(count)) for i in range(6)]
 
+def show_story():
+    MAX_CHARACTERS = 6
+    characters_file_path = "tmp/default/characters.json"
+    setting_file_path = "tmp/default/setting.txt"
+    plot_file_path = "tmp/default/plot.txt"
+    characters_images_dir = "tmp/default/characters"
+
+    # Initialize variables
+    num_characters = 0
+    names = [""] * MAX_CHARACTERS
+    sexs = ["Male"] * MAX_CHARACTERS
+    voices = ["Low"] * MAX_CHARACTERS
+    descriptions = [""] * MAX_CHARACTERS
+    character_image_paths = [None] * MAX_CHARACTERS
+    setting = ""
+    plot = ""
+
+    try:
+        if os.path.exists(characters_file_path):
+            with open(characters_file_path, "r") as f:
+                character_list = json.load(f)
+                num_characters = len(character_list)
+                for idx, char in enumerate(character_list):
+                    if idx < MAX_CHARACTERS:
+                        names[idx] = char.get("name", "")
+                        sexs[idx] = char.get("sex", "Male")
+                        voices[idx] = char.get("Voice", "Low")
+                        descriptions[idx] = char.get("description", "")
+
+        # Load character images
+        if os.path.exists(characters_images_dir):
+            for i in range(MAX_CHARACTERS):
+                image_path = f"{characters_images_dir}/character_{i+1}.png"
+                if os.path.exists(image_path):
+                    character_image_paths[i] = image_path
+
+        if os.path.exists(setting_file_path):
+            with open(setting_file_path, "r") as f:
+                setting = f.read()
+
+        if os.path.exists(plot_file_path):
+            with open(plot_file_path, "r") as f:
+                plot = f.read()
+
+    except Exception as e:
+        print(f"An unexpected error occurred in show_story: {e}")
+
+    # Add character row visibility updates
+    character_row_visibility = update_character_visibility(num_characters)
+
+    return [num_characters] + character_row_visibility + character_image_paths + names + sexs + voices + descriptions + [setting, plot]
+
 def show_images_and_prompts(number_of_scenes):
     MAX_SCENES = 12
-    path = "tmp/images/default"
+    path = "tmp/default/videos"
     
     # Get images
     scene_image_files = []

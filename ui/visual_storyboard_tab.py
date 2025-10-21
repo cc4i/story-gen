@@ -19,14 +19,14 @@ def visual_storyboard_tab(sl_number_of_scenes):
                 storyboard_rows.append(row)
                 scene_images.append(gr.Image(label=f"Scene #{i+1}", type="filepath", scale=1))
                 with gr.Column(scale=2):
-                    scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", interactive=True))
+                    scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", lines=6, interactive=True))
                     with gr.Row():
                         with gr.Column():
                             rows = []
                             for j in range(max_scripts):
                                 with gr.Row(visible=False) as row:
-                                    ta_char = gr.TextArea(label=f"Character #{j+1}", interactive=True)
-                                    ta_script = gr.TextArea(label=f"Script #{j+1}", interactive=True)
+                                    ta_char = gr.TextArea(label=f"Character #{j+1}", lines=3, interactive=True)
+                                    ta_script = gr.TextArea(label=f"Script #{j+1}", lines=4, interactive=True)
                                     num_start_time = gr.Number(label=f"Start Time #{j+1}", minimum=0, maximum=7, step=1, interactive=True)
                                     rows.append([row, ta_char, ta_script, num_start_time])
                             script_rows.append(rows)
@@ -49,8 +49,8 @@ def visual_storyboard_tab(sl_number_of_scenes):
         with gr.Row():
             veo_model_id = gr.Dropdown(
                 label="Model for generating videos",
-                choices=["veo-3.0-generate-preview", "veo-3.0-fast-generate-preview", "veo-3.0-generate-001", "veo-2.0-generate-001"],
-                value="veo-3.0-generate-preview",
+                choices=["veo-3.1-generate-preview", "veo-3.0-generate-001", "veo-3.0-fast-generate-preview", "veo-2.0-generate-001"],
+                value="veo-3.1-generate-preview",
                 interactive=True
             )
             cb_generate_audio = gr.Dropdown(
