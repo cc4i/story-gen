@@ -7,14 +7,14 @@ from utils.video_ts import merge_videos_moviepy
 from handlers.ui_handlers import clear_temp_files
 
 def generate_video(chosen_veo_model_id, is_generate_audio):
-    clear_temp_files("tmp/default", ".mp4")
+    clear_temp_files("tmp/default/videos", ".mp4")
 
     all_files = []
-    for file in os.listdir("tmp/images/default"):
+    for file in os.listdir("tmp/default/videos"):
         if file.startswith("scene_") and file.endswith(".png"):
-            image_path = f"tmp/images/default/{file}"
+            image_path = f"tmp/default/videos/{file}"
             seqence = file.split('.')[0].split('_')[1]
-            video_prompt_path = f"tmp/images/default/scene_prompt_{seqence}.txt"
+            video_prompt_path = f"tmp/default/videos/scene_prompt_{seqence}.txt"
             video_prompt = open(video_prompt_path, "r").read()
             print(f"image_path: {image_path}")
             print(f"video_prompt: {video_prompt}")
@@ -44,9 +44,9 @@ def generate_video(chosen_veo_model_id, is_generate_audio):
 
 def show_generated_videos():
     generated_videos = []
-    for file in os.listdir("tmp/default"):
+    for file in os.listdir("tmp/default/videos"):
         if file.endswith("_0.mp4"):
-            generated_videos.append(f"tmp/default/{file}")
+            generated_videos.append(f"tmp/default/videos/{file}")
     generated_videos.sort()
     return generated_videos
 

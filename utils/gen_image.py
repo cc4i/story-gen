@@ -77,17 +77,30 @@ def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_
         for idx, ref_img in enumerate(reference_images):
             try:
                 if isinstance(ref_img, str):
-                    # File path - load the image
-                    processed_ref_images.append(Image.open(ref_img))
-                    print(f"Loaded reference image {idx+1}: {ref_img}")
+                    # File path - verify it exists first
+                    if not os.path.exists(ref_img):
+                        print(f"Error: Reference image file does not exist: {ref_img}")
+                        continue
+                    # Load the image
+                    img = Image.open(ref_img)
+                    # Convert to RGB if needed (API might not accept RGBA or other modes)
+                    if img.mode not in ['RGB', 'L']:
+                        print(f"Converting reference image {idx+1} from {img.mode} to RGB")
+                        img = img.convert('RGB')
+                    processed_ref_images.append(img)
+                    print(f"Loaded reference image {idx+1}: {ref_img} ({img.size}, {img.mode})")
                 elif isinstance(ref_img, Image.Image):
                     # Already a PIL Image
-                    processed_ref_images.append(ref_img)
-                    print(f"Using reference image {idx+1}: PIL Image object")
+                    img = ref_img
+                    if img.mode not in ['RGB', 'L']:
+                        print(f"Converting reference image {idx+1} from {img.mode} to RGB")
+                        img = img.convert('RGB')
+                    processed_ref_images.append(img)
+                    print(f"Using reference image {idx+1}: PIL Image object ({img.size}, {img.mode})")
                 else:
-                    print(f"Warning: Reference image {idx+1} has invalid type. Skipping.")
+                    print(f"Warning: Reference image {idx+1} has invalid type: {type(ref_img)}. Skipping.")
             except Exception as e:
-                print(f"Warning: Could not load reference image {idx+1}: {e}")
+                print(f"Error: Could not load reference image {idx+1}: {e}")
 
     # Combine prompt with negative prompt if provided
     full_prompt = prompt
