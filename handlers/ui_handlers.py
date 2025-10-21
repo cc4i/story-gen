@@ -2,6 +2,7 @@
 import gradio as gr
 import os
 import json
+from utils.acceptance import to_snake_case_v2
 
 def check_folder(path):
     # check folder tmp/ and subfolder tmp/images/default
@@ -56,13 +57,11 @@ def show_story():
                         sexs[idx] = char.get("sex", "Male")
                         voices[idx] = char.get("Voice", "Low")
                         descriptions[idx] = char.get("description", "")
-
-        # Load character images
-        if os.path.exists(characters_images_dir):
-            for i in range(MAX_CHARACTERS):
-                image_path = f"{characters_images_dir}/character_{i+1}.png"
-                if os.path.exists(image_path):
-                    character_image_paths[i] = image_path
+                        # Load character images
+                        if os.path.exists(characters_images_dir):
+                                image_path = f"{characters_images_dir}/{to_snake_case_v2(names[idx])}.png"
+                                if os.path.exists(image_path):
+                                    character_image_paths[idx] = image_path
 
         if os.path.exists(setting_file_path):
             with open(setting_file_path, "r") as f:

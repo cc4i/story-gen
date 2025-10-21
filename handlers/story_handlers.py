@@ -1,10 +1,11 @@
-
+import gradio as gr
 import json
 import os
 from utils.llm import call_llm
 from utils.logger import logger
 from utils.prompt_templates import generate_story_prompt, update_story_prompt, develop_story_prompt
 from utils.gen_image import gen_images, gen_images_by_banana
+from utils.acceptance import to_snake_case_v2
 from PIL import Image
 from io import BytesIO
 from handlers.ui_handlers import check_folder, clear_temp_files
@@ -45,8 +46,6 @@ def generate_story(idea):
     return characters, setting, plot
 
 def update_story(idea, characters):
-    save_characters(characters)
-
     system_instruction, prompt = update_story_prompt(idea, characters)
     history = ""
     string_response = call_llm(system_instruction, prompt, history, "gemini-2.5-flash")
@@ -54,10 +53,12 @@ def update_story(idea, characters):
     setting = json_response["setting"]
     plot = json_response["plot"]
 
+    save_characters(characters)
     save_setting(setting)
     save_plot(plot)
 
     return setting, plot
+
 
 def generate_character_images(*args):
     """Generate images for each character based on their descriptions
@@ -94,7 +95,7 @@ def generate_character_images(*args):
         """
         images_data=gen_images_by_banana(char_prompt)
         image = Image.open(BytesIO(images_data[0]))
-        image_path = f"tmp/default/characters/character_{i+1}.png"
+        image_path = f"tmp/default/characters/{to_snake_case_v2(character_names[i])}.png"
         image.save(image_path)
         generated_images.append(image_path)
 
@@ -123,7 +124,7 @@ def developing_story(*args):
     Returns:
         list: [story_response] + flattened script_rows updates (144 values: 12 scenes * 3 lines * 4 fields)
     """
-    import gradio as gr
+    
 
     # Parse arguments
     number_of_characters = int(args[0])
@@ -137,13 +138,21 @@ def developing_story(*args):
     number_of_scenes = int(args[33])
     duration_per_scene = int(args[34])
     style = args[35]
-
+    character_image_dict={}
+    reference_images=[]
+    
     # Build characters string for the prompt
-    character_lines = []
+    characters = []
     for i in range(number_of_characters):
         if character_names[i] and character_descriptions[i]:
-            character_lines.append(f"{character_names[i]}: {character_descriptions[i]}")
-    characters = "\n".join(character_lines)
+            characters.append({
+                "name": character_names[i],
+                "sex": character_sexs[i],
+                "voice": character_voices[i],
+                "description": character_descriptions[i]
+            })
+        if character_names[i] and character_descriptions[i]:
+            character_image_dict[character_names[i]]=character_images[i]
 
     # Clear old video files
     clear_temp_files("tmp/default/videos", ".*")
@@ -168,8 +177,9 @@ def developing_story(*args):
     # Generate images and save prompts/scripts for each scene
     for i, scene in enumerate(json_response, 1):
         image_prompt = scene["image_prompt"]
-
-        generated_image_data = gen_images_by_banana(image_prompt)[0]
+        for k in character_image_dict:
+            reference_images.append(character_image_dict[k])
+        generated_image_data = gen_images_by_banana(prompt=image_prompt, reference_images=reference_images)[0]
 
         image = Image.open(BytesIO(generated_image_data))
         image.save(f"tmp/default/videos/scene_{i}.png")
