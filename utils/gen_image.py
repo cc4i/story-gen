@@ -26,7 +26,7 @@ def gen_images(model_id, prompt, negative_prompt, number_of_images, aspect_ratio
     return response.generated_images
 
 
-def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_ratio="1:1", reference_images=None):
+def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_ratio="16:9", reference_images=None):
     """
     Generate images using Gemini 2.5 Flash Image model (gemini-2.5-flash-image)
 
@@ -127,7 +127,10 @@ def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_
                 model="gemini-2.5-flash-image",
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    response_modalities=['Image']  # Only return image
+                    response_modalities=['Image'],  # Only return image
+                    image_config=types.ImageConfig(
+                        aspect_ratio=aspect_ratio
+                    )
                 )
             )
 

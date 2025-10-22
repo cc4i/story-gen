@@ -123,17 +123,17 @@ def develop_story_prompt(characters: list[dict], setting: str, plot: str, number
             {
             "scene_number": "Integer. The unique, sequential identifier for the scene, defining its chronological order.",
             "location": "String. The physical environment or 'set' where the scene takes place. Should include scale, key features, and sensory details.",
-            "atmosphere": "The overall mood, tone, time of day, and weather of the scene. This defines the 'vibe'.",
+            "atmosphere": "String. The overall mood, tone, time of day, and weather of the scene. This defines the 'vibe'.",
             "characters": ["Array of Strings. A list of all character names who are physically present and active in the scene."],
             "dialogue": [
                 {
-                "character": "The character name.",
+                "character": "String. The character name.",
                 "line": "String (can include parentheticals for tone, e.g., '(Whispering) Get down.')"
                 }
             ],
             "key_actions": ["Array of Strings. A step-by-step list of the main visual events and physical actions that happen in chronological order."],
-            "key_visual_focus": "The single most important image of the scene; the 'hero shot' or 'thumbnail' that guides the director's emphasis.",
-            "sound_design": "All non-dialogue audio, including music (tone/style), ambient background sounds, and key sound effects (SFX)."
+            "key_visual_focus": "String. The single most important image of the scene; the 'hero shot' or 'thumbnail' that guides the director's emphasis.",
+            "sound_design": "String. All non-dialogue audio, including music (tone/style), ambient background sounds, and key sound effects (SFX)."
             }
         ]
     }

@@ -187,17 +187,25 @@ def developing_story(*args):
 
         # Collect valid reference images for characters in this scene
         for n in scene["characters"]:
-            img_path = f"tmp/default/characters/{to_snake_case_v2(n)}.png"
+            # Handle both string names and dict objects with 'name' field
+            character_name = n["name"] if isinstance(n, dict) else n
+            img_path = f"tmp/default/characters/{to_snake_case_v2(character_name)}.png"
             if os.path.exists(img_path):
                 reference_images.append(img_path)
-                logger.info(f"Scene {i}: Added reference image for character '{n}': {img_path}")
+                logger.info(f"Scene {i}: Added reference image for character '{character_name}': {img_path}")
             else:
-                logger.warning(f"Scene {i}: Reference image not found for character '{n}': {img_path}")
+                logger.warning(f"Scene {i}: Reference image not found for character '{character_name}': {img_path}")
 
         # Limit to max 3 reference images (API best practice)
         if len(reference_images) > 3:
             logger.warning(f"Scene {i}: Found {len(reference_images)} reference images, using only first 3")
             reference_images = reference_images[:3]
+
+        # Extract character names (handle both string and dict formats)
+        character_names_in_scene = [
+            c["name"] if isinstance(c, dict) else c
+            for c in scene["characters"]
+        ]
 
         # Try with reference images first, fallback to no references if it fails
         try:
@@ -205,7 +213,7 @@ def developing_story(*args):
                 Generate a key image for the scene based on following description:
                 - location: ***{scene["location"]}***
                 - atmosphere: ***{scene["atmosphere"]}***
-                - characters: ***{scene["characters"]}***
+                - characters: ***{character_names_in_scene}***
 
                 Notice:
                 - All characters must be front face and aligned with referenced character image.
@@ -233,4 +241,4 @@ def developing_story(*args):
         with open(video_script_file, "w") as f:
             f.write(json.dumps(scene["dialogue"], indent=4))
 
-    return [string_response]
+    return json.dumps(json_response, indent=4)

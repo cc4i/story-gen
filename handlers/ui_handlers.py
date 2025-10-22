@@ -62,8 +62,10 @@ def show_story():
                         descriptions[idx] = char.get("description", "")
                         if os.path.exists(characters_images_dir):
                             image_path = os.path.join(characters_images_dir, f"{to_snake_case_v2(names[idx])}.png")
+                            print(f"image_path: {image_path}")
                             if os.path.exists(image_path):
                                 character_image_paths[idx] = image_path
+                                print(f"character_image_paths: {character_image_paths}")
 
         if os.path.exists(setting_file_path):
             with open(setting_file_path, "r") as f:

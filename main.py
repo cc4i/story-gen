@@ -6,6 +6,7 @@ import gradio as gr
 from ui.idea_tab import idea_tab
 from ui.story_tab import story_tab
 from ui.visual_storyboard_tab import visual_storyboard_tab
+from ui.visual_storyboard_v31_tab import visual_storyboard_v31_tab
 from ui.short_ingredients_tab import short_ingredients_tab
 from ui.big_thing_tab import big_thing_tab
 
@@ -39,7 +40,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     (sl_number_of_characters, character_rows, character_images, character_names,character_sexs, character_voices,
      character_descriptions, btn_generate_character_images, btn_update_story, ta_setting,
      ta_plot, sl_number_of_scenes, sl_duration_per_scene, btn_developing,
-     tb_developed_story) = story_tab()
+     ta_developed_story) = story_tab()
     # Generate character images
     btn_generate_character_images.click(
         generate_character_images,
@@ -67,11 +68,16 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         characters, setting, plot = generate_story(idea + f" Number of characters: {number_of_characters}")
         return show_story()
 
-    sl_number_of_characters.release(
+    update_character_step1=sl_number_of_characters.release(
         fn=update_character_count,
         inputs=[sl_number_of_characters, ta_idea],
         outputs=[sl_number_of_characters] + character_rows + character_images + character_names + character_sexs + character_voices + character_descriptions + [ta_setting, ta_plot],
         queue=False
+    )
+    update_character_step1.then(
+        generate_character_images,
+        inputs=[sl_number_of_characters] + character_names + character_sexs + character_voices + character_descriptions + [dd_style],
+        outputs=character_images
     )
 
     # Tab 3: Visual Storyboard Tab
@@ -83,9 +89,14 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         developing_story,
         inputs=[sl_number_of_characters] + character_images + character_names + character_sexs + character_voices + character_descriptions +
                [ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_style],
-        outputs=[tb_developed_story]
+        outputs=[ta_developed_story]
     )
     developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
+
+
+    # Tab 3: Visual Storyboard v31 Tab
+    (scene_images_v31, scene_texts_v31, veo_model_id_v31, cb_generate_audio_v31, 
+     btn_generate_videos_v31, storyboard_rows_v31 ) = visual_storyboard_v31_tab(sl_number_of_scenes)
 
     # Tab 4: Short Ingredients Tab
     short_ingredients, btn_merge_videos = short_ingredients_tab()

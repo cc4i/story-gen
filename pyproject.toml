@@ -11,7 +11,7 @@ dependencies = [
     "google-cloud-datastore==2.21.0",
     "google-cloud-run==0.10.17",
     "google-cloud-storage==3.1.0",
-    "google-genai==1.13.0",
+    "google-genai==1.46.0",
     "gradio==5.49.1",
     "itsdangerous==2.2.0",
     "mediapy>=1.2.4",
