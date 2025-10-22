@@ -426,7 +426,7 @@ def download_videos(op: Dict[str, Any], whoami: str, seqence: str, loop_seamless
     logger.info(f"op: {op}")
     logger.info("--------------------------------")
     logger.info(f"Starting video download for user: {whoami}")
-    local_path = f"{LOCAL_STORAGE}/{whoami}"
+    local_path = f"{LOCAL_STORAGE}/{whoami}/videos"
     logger.info(f"local_path: {local_path}")
 
     if not os.path.exists(local_path):

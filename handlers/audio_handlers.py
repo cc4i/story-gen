@@ -1,4 +1,5 @@
 
+
 import os
 import re
 import time
@@ -8,18 +9,18 @@ from utils.logger import logger
 import json
 from handlers.ui_handlers import clear_temp_files
 from utils.video_ts import merge_audio_at_time
-
+from utils.config import DEFAULT_SESSION_DIR, VIDEOS_DIR
 
 def generate_audio():
-    clear_temp_files("tmp/default", ".wav")
+    clear_temp_files(DEFAULT_SESSION_DIR, ".wav")
     all_audio_files = {}
     audio_files = []
     random_voice={}
-    for file in os.listdir("tmp/images/default"):
+    for file in os.listdir(VIDEOS_DIR):
         if file.startswith("scene_script_") and file.endswith(".txt"):
             logger.info(f"script file: {file}")
             order = file.split(".")[0].split("_")[2]
-            string_script = open(f"tmp/images/default/{file}", "r").read()
+            string_script = open(os.path.join(VIDEOS_DIR, file), "r").read()
             json_script = json.loads(string_script)
             for script in json_script:
                 character_name=script["character"]
@@ -58,15 +59,15 @@ def generate_audio():
 
 def show_generated_audios():
     all_audio_files = {}
-    path = "tmp/default"
+    path = DEFAULT_SESSION_DIR
     if os.path.exists(path):
         for file in os.listdir(path):
             if file.endswith(".wav"):
                 order = file.split("-")[0]
                 if all_audio_files.get(order) is None:
-                    all_audio_files[order]= [f"tmp/default/{file}"]
+                    all_audio_files[order]= [os.path.join(path, file)]
                 else:
-                    all_audio_files[order].append(f"tmp/default/{file}")
+                    all_audio_files[order].append(os.path.join(path, file))
     
     # Ensure all possible keys exist
     for i in range (1, 13):
@@ -87,18 +88,17 @@ def merge_audios():
     audio_files = []
     video_files = {}
     merged_list = {}
-    for file in os.listdir("tmp/default"):
+    for file in os.listdir(DEFAULT_SESSION_DIR):
         if file.endswith(".wav"):
-            audio_files.append(f"tmp/default/{file}")
+            audio_files.append(os.path.join(DEFAULT_SESSION_DIR, file))
     print("===========audio_files=============")
     print(audio_files)
     print("===========audio_files=============")
 
-    for file in os.listdir("tmp/default"):
+    for file in os.listdir(DEFAULT_SESSION_DIR):
         if file.endswith(".mp4"):
-            # video_files.append(f"tmp/default/{file}")
             order = file.split("-")[0]
-            video_files[order] = f"tmp/default/{file}"
+            video_files[order] = os.path.join(DEFAULT_SESSION_DIR, file)
     print("===========video_files=============")
     print(video_files)
     print("===========video_files=============")

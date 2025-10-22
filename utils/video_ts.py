@@ -1,9 +1,10 @@
+
 import os
 from moviepy import VideoFileClip, concatenate_videoclips, CompositeAudioClip, AudioFileClip
-
+from utils.config import VIDEOS_DIR, MERGED_VIDEO_MP4
 
 # merge mutiple videos into one
-def merge_videos_moviepy(video_path="tmp/default", output_path="tmp/default/merged_video.mp4", method="compose"):
+def merge_videos_moviepy(video_path=VIDEOS_DIR, output_path=MERGED_VIDEO_MP4, method="compose"):
     """
     Merge multiple videos into one using MoviePy.
 
@@ -19,9 +20,9 @@ def merge_videos_moviepy(video_path="tmp/default", output_path="tmp/default/merg
     try:
         # Load each video file into a VideoFileClip object
         for file in os.listdir(video_path):
-            if file.endswith("0.mp4"):
+            if file.endswith("_0.mp4"):
                 print(f"Loading clip: {file}")
-                clip_paths.append(f"{video_path}/{file}")
+                clip_paths.append(os.path.join(video_path, file))
         
         # sort clip_paths by order
         clip_paths.sort()

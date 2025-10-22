@@ -53,7 +53,7 @@ def story_tab():
         with gr.Row():
             btn_developing = gr.Button("Developing")
         with gr.Row():
-            tb_developed_story = gr.TextArea(label="Developed story", lines=15)
+            tb_developed_story = gr.JSON(label="Developed story")
 
     return (sl_number_of_characters, character_rows, character_images, character_names, character_sexs, character_voices, character_descriptions,
             btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,

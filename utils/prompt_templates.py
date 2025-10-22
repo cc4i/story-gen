@@ -83,8 +83,17 @@ def update_story_prompt(idea: str, characters: str) -> Tuple[str, str]:
     """
 
 def develop_story_prompt(characters: list[dict], setting: str, plot: str, number_of_scenes: int, duration_per_scene: int, style: str) -> Tuple[str, str]:
-    system_instruction = """
-    You are a creative writer. Your task is to develop a riveting, creative, unique, and meaningful story based on the provided information.Whilst maintaining a cohesive storyline. 
+    system_instruction = """    <role>
+    You are a creative writer.
+    </role>
+    <persona>
+    Your task is to develop a riveting, creative, unique, and meaningful story based on the provided information. Whilst maintaining a cohesive storyline.
+    </persona>
+    <constraints>
+    1. Your output MUST be a single, valid JSON object.
+    2. Do not include any introductory text, closing text, or any other text outside of the JSON object.
+    3. The JSON object must strictly follow the structure provided in the user prompt.
+    </constraints>
     """
     prompt = f"""
     Here is the information you need to create the story:
@@ -109,23 +118,25 @@ def develop_story_prompt(characters: list[dict], setting: str, plot: str, number
     
     """+"""
     # OUTPUT AS JSON FORMAT: 
-    [
-        {
-            "title": "Title of each scene", 
-            "description": "Description of each scene, include characters, conmunications, interactions, etc, as much detail as possible.", 
-            "characters": ["The list of character's name, which would show up in the scene."]
-            "image_prompt": "Prompt to generate the first image for each scene, include subjects (characters, objects, animals, scenery etc), the background or context in which the subject will be placed, and the image style. Do not include any description of the character, just name of the character.", 
-            "scripts": [
+    {
+        "story_scenes": [
+            {
+            "scene_number": "Integer. The unique, sequential identifier for the scene, defining its chronological order.",
+            "location": "String. The physical environment or 'set' where the scene takes place. Should include scale, key features, and sensory details.",
+            "atmosphere": "The overall mood, tone, time of day, and weather of the scene. This defines the 'vibe'.",
+            "characters": ["Array of Strings. A list of all character names who are physically present and active in the scene."],
+            "dialogue": [
                 {
-                    "character": "Name of the character",
-                    "gender": "Gender of the character",
-                    "dialogue": "Dialogue of the character, total length of dialogue of all characters in this scene has to be less than 7 seconds",
-                    "time": "Time of the dialogue beginning, unit: seconds, e.g. 2 - start from 2 seconds"
+                "character": "The character name.",
+                "line": "String (can include parentheticals for tone, e.g., '(Whispering) Get down.')"
                 }
-            ]
-        }
-    ]
-        
+            ],
+            "key_actions": ["Array of Strings. A step-by-step list of the main visual events and physical actions that happen in chronological order."],
+            "key_visual_focus": "The single most important image of the scene; the 'hero shot' or 'thumbnail' that guides the director's emphasis.",
+            "sound_design": "All non-dialogue audio, including music (tone/style), ambient background sounds, and key sound effects (SFX)."
+            }
+        ]
+    }
     """
 
     return system_instruction, prompt

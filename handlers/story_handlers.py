@@ -9,9 +9,16 @@ from utils.acceptance import to_snake_case_v2
 from PIL import Image
 from io import BytesIO
 from handlers.ui_handlers import check_folder, clear_temp_files
-
+from utils.config import (
+    CHARACTERS_JSON,
+    SETTING_TXT,
+    PLOT_TXT,
+    STORY_JSON,
+    CHARACTERS_DIR,
+    VIDEOS_DIR,
+)
 def save_characters(characters):
-    with open("tmp/default/characters.json", "w") as f:
+    with open(CHARACTERS_JSON, "w") as f:
         if isinstance(characters, str):
             char_list = []
             for line in characters.split('\n'):
@@ -23,11 +30,11 @@ def save_characters(characters):
             json.dump(characters, f, indent=4)
 
 def save_setting(setting):
-    with open("tmp/default/setting.txt", "w") as f:
+    with open(SETTING_TXT, "w") as f:
         f.write(setting)
 
 def save_plot(plot):
-    with open("tmp/default/plot.txt", "w") as f:
+    with open(PLOT_TXT, "w") as f:
         f.write(plot)
 
 def generate_story(idea):
@@ -158,7 +165,6 @@ def developing_story(*args):
     check_folder("tmp/default/videos")
     clear_temp_files("tmp/default/videos", ".*")
 
-
     # Save the story data
     save_characters(characters)
     save_setting(setting)
@@ -176,8 +182,7 @@ def developing_story(*args):
     json_response = json.loads(string_response)
 
     # Generate images and save prompts/scripts for each scene
-    for i, scene in enumerate(json_response, 1):
-        image_prompt = scene["image_prompt"]
+    for i, scene in enumerate(json_response["story_scenes"],1):
         reference_images = []
 
         # Collect valid reference images for characters in this scene
@@ -196,6 +201,15 @@ def developing_story(*args):
 
         # Try with reference images first, fallback to no references if it fails
         try:
+            image_prompt = f"""
+                Generate a key image for the scene based on following description:
+                - location: ***{scene["location"]}***
+                - atmosphere: ***{scene["atmosphere"]}***
+                - characters: ***{scene["characters"]}***
+
+                Notice:
+                - All characters must be front face and aligned with referenced character image.
+            """
             if reference_images:
                 logger.info(f"Scene {i}: Generating with {len(reference_images)} reference image(s)")
                 generated_image_data = gen_images_by_banana(prompt=image_prompt, reference_images=reference_images)[0]
@@ -213,40 +227,10 @@ def developing_story(*args):
 
         video_prompt_file = f"tmp/default/videos/scene_prompt_{i}.txt"
         with open(video_prompt_file, "w") as f:
-            f.write(scene["description"])
+            f.write(json.dumps(scene, indent=4))
 
         video_script_file = f"tmp/default/videos/scene_script_{i}.txt"
         with open(video_script_file, "w") as f:
-            f.write(json.dumps(scene["scripts"]))
+            f.write(json.dumps(scene["dialogue"], indent=4))
 
-    # Build script_rows updates (12 scenes * 3 lines * 4 fields)
-    script_updates = []
-
-    for i in range(12):  # MAX_SCENES = 12
-        if i < number_of_scenes:
-            # Read the script file for this scene
-            with open(f"tmp/default/videos/scene_script_{i+1}.txt", "r") as f:
-                json_script = json.loads(f.read())
-
-            for j in range(3):  # Up to 3 script lines per scene
-                if j < len(json_script):
-                    # Visible, character, dialogue, time
-                    script_updates.append(gr.update(visible=True))
-                    script_updates.append(gr.update(value=json_script[j]["character"]))
-                    script_updates.append(gr.update(value=json_script[j]["dialogue"]))
-                    script_updates.append(gr.update(value=float(json_script[j]["time"])))
-                else:
-                    # Hidden row
-                    script_updates.append(gr.update(visible=False))
-                    script_updates.append(gr.update(value=""))
-                    script_updates.append(gr.update(value=""))
-                    script_updates.append(gr.update(value=0.0))
-        else:
-            # Scene doesn't exist, hide all 3 lines
-            for j in range(3):
-                script_updates.append(gr.update(visible=False))
-                script_updates.append(gr.update(value=""))
-                script_updates.append(gr.update(value=""))
-                script_updates.append(gr.update(value=0.0))
-
-    return [string_response] + script_updates
+    return [string_response]
