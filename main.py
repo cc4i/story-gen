@@ -9,6 +9,7 @@ from ui.visual_storyboard_tab import visual_storyboard_tab
 from ui.short_ingredients_tab import short_ingredients_tab
 from ui.big_thing_tab import big_thing_tab
 
+from handlers.idea_handlers import generate_random_idea
 from handlers.story_handlers import generate_story, update_story, developing_story, generate_character_images
 from handlers.video_handlers import generate_video, show_generated_videos, show_merged_videos
 from handlers.audio_handlers import generate_audio, show_generated_audios, merge_audios
@@ -28,6 +29,11 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
             gr.Button("Logout", link="/logout", scale=1)
     # Tab 1: Idea Tab
     ta_idea, dd_style, btn_random_idea, btn_generate_story = idea_tab()
+    btn_random_idea.click(
+        generate_random_idea,
+        inputs=None,
+        outputs=[ta_idea]
+    )
 
     # Tab 2: Story Tab
     (sl_number_of_characters, character_rows, character_images, character_names,character_sexs, character_voices,

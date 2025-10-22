@@ -91,6 +91,7 @@ def merge_audios():
     for file in os.listdir(DEFAULT_SESSION_DIR):
         if file.endswith(".wav"):
             audio_files.append(os.path.join(DEFAULT_SESSION_DIR, file))
+    audio_files.sort()
     print("===========audio_files=============")
     print(audio_files)
     print("===========audio_files=============")
@@ -99,10 +100,12 @@ def merge_audios():
         if file.endswith(".mp4"):
             order = file.split("-")[0]
             video_files[order] = os.path.join(DEFAULT_SESSION_DIR, file)
+    video_files.sort()
     print("===========video_files=============")
     print(video_files)
     print("===========video_files=============")
     
+    # If any audio files 
     for audio_file in audio_files:
         print(f"audio_file: {audio_file}")
         strings = audio_file.split("/")[-1].split("-")
@@ -117,10 +120,6 @@ def merge_audios():
             merged_list[video_file] = {"audios": [{"audio_file": audio_file, "start_time": start_time}]}
         else:
             merged_list[video_file]["audios"].append({"audio_file": audio_file, "start_time": start_time})
-    print("===========merged_list=============")
-    print(merged_list)
-    print("===========merged_list=============")
-
     
     for video_file in merged_list.keys():
         merged_video=video_file.split(".")[0] + "-merged.mp4"

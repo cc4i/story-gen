@@ -23,15 +23,40 @@ def merge_videos_moviepy(video_path=VIDEOS_DIR, output_path=MERGED_VIDEO_MP4, me
             if file.endswith("_0.mp4"):
                 print(f"Loading clip: {file}")
                 clip_paths.append(os.path.join(video_path, file))
-        
-        # sort clip_paths by order
-        clip_paths.sort()
+
+        # Sort clip_paths by sequence number (numeric sort, not alphabetical)
+        # Files are named like: sequence-uuid-video_0.mp4
+        # Extract the sequence number (first part before dash) and sort numerically
+        def get_sequence_number(path):
+            filename = os.path.basename(path)
+            # Extract sequence number from filename like "1-uuid-video_0.mp4"
+            try:
+                seq_num = int(filename.split('-')[0])
+                print(f"  Extracting sequence {seq_num} from {filename}")
+                return seq_num
+            except (ValueError, IndexError) as e:
+                print(f"  WARNING: Could not extract sequence from {filename}: {e}")
+                return 0
+
+        print(f"\n=== Sorting {len(clip_paths)} clips by sequence number ===")
+        clip_paths.sort(key=get_sequence_number)
+
+        print(f"\n=== Loading clips in sorted order ===")
         for path in clip_paths:
+            print(f"Loading: {os.path.basename(path)}")
             clips.append(VideoFileClip(path))
+        
 
         if not clips:
             print("No valid video clips loaded.")
             return False
+
+        # Debug: Print final clips order before concatenation
+        print(f"\n=== Final clips order (total: {len(clips)}) ===")
+        for i, (path, clip) in enumerate(zip(clip_paths, clips)):
+            filename = os.path.basename(path)
+            print(f"  {i+1}. {filename} (duration: {clip.duration:.2f}s)")
+        print("=" * 50)
 
         # Concatenate the video clips
         print(f"Concatenating clips using method='{method}'...")

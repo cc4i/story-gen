@@ -95,12 +95,12 @@ def generate_character_images(*args):
 
         # Create character image prompt
         char_prompt = f"""
-            Full-body shot of the character: ***{character_names[i]}*** 
-            Sex: ***{character_sexs[i]}***
-            The description of character: ***{character_descriptions[i]}***
-            Style: ***{style}***
-            Background: ***The background must be a solid, clean, plain white background, isolating the character.***
+            # Full-body shot of the character: ***{character_names[i]}*** 
+            # Sex: ***{character_sexs[i]}***
+            # A ***{style}*** image of ***{character_descriptions[i]}***
+            # Background: ***The background must be a solid, clean, plain white background, isolating the character.***
         """
+
         images_data=gen_images_by_banana(char_prompt)
         image = Image.open(BytesIO(images_data[0]))
         image_path = f"tmp/default/characters/{to_snake_case_v2(character_names[i])}.png"

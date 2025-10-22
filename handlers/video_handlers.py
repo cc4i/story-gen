@@ -44,7 +44,16 @@ def generate_video(chosen_veo_model_id, is_generate_audio):
             )
             files = download_videos(op, "default", sequence, False)
             all_files.extend(files)
-    all_files.sort()
+
+    # Sort by sequence number (numeric sort, not alphabetical)
+    def get_sequence_number(path):
+        filename = os.path.basename(path)
+        try:
+            return int(filename.split('-')[0])
+        except (ValueError, IndexError):
+            return 0
+
+    all_files.sort(key=get_sequence_number)
     return all_files
 
 def show_generated_videos():
@@ -54,7 +63,16 @@ def show_generated_videos():
         if file.endswith("_0.mp4"):
             print(f"image_path: {file}")
             generated_videos.append(os.path.join(VIDEOS_DIR, file))
-    generated_videos.sort()
+
+    # Sort by sequence number (numeric sort, not alphabetical)
+    def get_sequence_number(path):
+        filename = os.path.basename(path)
+        try:
+            return int(filename.split('-')[0])
+        except (ValueError, IndexError):
+            return 0
+
+    generated_videos.sort(key=get_sequence_number)
     return generated_videos
 
 def show_merged_videos():

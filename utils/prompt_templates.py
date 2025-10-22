@@ -32,7 +32,7 @@ def generate_story_prompt(idea: str) -> Tuple[str, str]:
             - `sex`: Must be either "Female" or "Male".
             - `voice`: Must be one of the following: "High-pitched", "Low", "Deep", "Squeaky", or "Booming".
             - `description`: A detailed description of the character, including their appearance, personality, style, etc.
-        5. Maximum ***3*** characters.
+        5. The number of characters must be LESS THAN ***3***.
         </constraints>
     """
 
