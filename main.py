@@ -168,7 +168,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     
     for i in range(len(scene_images)):
         scene_images[i].upload(
-            fn=lambda path, id=i+1: shutil.copyfile(path, f"tmp/images/default/scene_{id}.{path.split(".")[1]}"),
+            fn=lambda path, id=i+1: shutil.copyfile(path, f"tmp/images/default/scene_{id}.{path.split(".")[-1]}"),
             inputs=[scene_images[i]],
             outputs=None
         )
