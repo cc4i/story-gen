@@ -13,6 +13,7 @@ CHARACTERS_DIR = os.path.join(DEFAULT_SESSION_DIR, "characters")
 VIDEOS_DIR = os.path.join(DEFAULT_SESSION_DIR, "videos")
 
 # Define the file paths
+IDEA_TXT = os.path.join(DEFAULT_SESSION_DIR, "idea.txt")
 CHARACTERS_JSON = os.path.join(DEFAULT_SESSION_DIR, "characters.json")
 SETTING_TXT = os.path.join(DEFAULT_SESSION_DIR, "setting.txt")
 PLOT_TXT = os.path.join(DEFAULT_SESSION_DIR, "plot.txt")

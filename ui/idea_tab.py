@@ -2,7 +2,7 @@
 import gradio as gr
 
 def idea_tab():
-    with gr.Tab("1. Idea >>"):
+    with gr.Tab("✨ The Spark"):
         with gr.Row():
             ta_idea = gr.TextArea(label="What's the Idea", lines=8,
                 value="""

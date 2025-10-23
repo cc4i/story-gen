@@ -10,7 +10,7 @@ from ui.visual_storyboard_v31_tab import visual_storyboard_v31_tab
 from ui.short_ingredients_tab import short_ingredients_tab
 from ui.big_thing_tab import big_thing_tab
 
-from handlers.idea_handlers import generate_random_idea
+from handlers.idea_handlers import generate_random_idea, load_idea
 from handlers.story_handlers import generate_story, update_story, developing_story, generate_character_images
 from handlers.video_handlers import generate_video, generate_video_v31, show_generated_videos, show_merged_videos
 from handlers.audio_handlers import generate_audio, show_generated_audios, merge_audios
@@ -18,16 +18,81 @@ from handlers.ui_handlers import show_images_and_prompts, show_images_and_prompt
 from utils.video_ts import merge_videos_moviepy
 from utils.config import VIDEOS_DIR
 
-with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
+with gr.Blocks(
+    theme=gr.themes.Glass(),
+    title="Story GeN Studio • AI Video Generation",
+    css="""
+        /* Tab title styling */
+        .tab-nav button,
+        .tabs button,
+        button[role="tab"],
+        .svelte-1b6s6s button {
+            font-size: 1.25em !important;
+            font-weight: 700 !important;
+            padding: 10px 16px !important;
+            line-height: 1.2 !important;
+        }
+
+        /* Fix TextArea scrollbar visibility */
+        textarea {
+            overflow-y: auto !important;
+            overflow-x: auto !important;
+        }
+
+        /* Ensure scrollbar is always visible when content overflows */
+        textarea:not(:focus) {
+            overflow-y: auto !important;
+        }
+    """,
+    js="""
+    function() {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('__theme')) {
+            document.body.classList.remove('dark');
+            document.body.classList.add('light');
+        }
+
+        // Make tab titles bigger
+        setTimeout(() => {
+            const tabButtons = document.querySelectorAll('button[role="tab"]');
+            tabButtons.forEach(btn => {
+                btn.style.fontSize = '1.25em';
+                btn.style.fontWeight = '700';
+                btn.style.padding = '10px 16px';
+                btn.style.lineHeight = '1.2';
+            });
+
+            // Fix textarea scrollbar visibility
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.style.overflowY = 'auto';
+                textarea.style.overflowX = 'auto';
+                // Force reflow to make browser recalculate scrollbar visibility
+                textarea.offsetHeight;
+            });
+        }, 100);
+    }
+    """
+) as demo:
     with gr.Row():
         with gr.Column(scale=20):
             gr.Markdown("""
-                # Story GeN/Video
-                Tell me a story and give back a video ... powered by <b>CC</b>
+                <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0;">
+                    <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg"
+                         alt="Gemini" style="width: 52px; height: 52px;">
+                    <div>
+                        <h1 style="margin: 0; font-size: 2.2em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            Story GeN Studio
+                        </h1>
+                        <p style="margin: 4px 0 0 0; opacity: 0.75; font-size: 0.95em;">
+                            From imagination to screen • Powered by Google AI
+                        </p>
+                    </div>
+                </div>
             """)
         with gr.Column(scale=1):
             gr.Textbox(value="", interactive=False, visible=False)
-            gr.Button("Logout", link="/logout", scale=1)
+            # gr.Button("Logout", link="/logout", scale=1)
     # Tab 1: Idea Tab
     ta_idea, dd_style, btn_random_idea, btn_generate_story = idea_tab()
     btn_random_idea.click(
@@ -39,7 +104,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     # Tab 2: Story Tab
     (sl_number_of_characters, character_rows, character_images, character_names,character_sexs, character_voices,
      character_descriptions, btn_generate_character_images, btn_update_story, ta_setting,
-     ta_plot, sl_number_of_scenes, sl_duration_per_scene, btn_developing,
+     ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_story_model, btn_developing,
      ta_developed_story) = story_tab()
     # Generate character images
     btn_generate_character_images.click(
@@ -88,7 +153,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     developing_story_step1 = btn_developing.click(
         developing_story,
         inputs=[sl_number_of_characters] + character_images + character_names + character_sexs + character_voices + character_descriptions +
-               [ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_style],
+               [ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_story_model, dd_style],
         outputs=[ta_developed_story]
     )
     developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
@@ -114,6 +179,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     btn_merge_videos.click(merge_videos_moviepy, inputs=None, outputs=[merged_video])
 
     # Load the existed images and prompts if any
+    demo.load(load_idea, inputs=None, outputs=[ta_idea])
     demo.load(show_story, inputs=None, outputs=[sl_number_of_characters] + character_rows + character_images + character_names + character_sexs + character_voices + character_descriptions + [ta_setting] + [ta_plot])
     demo.load(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
     demo.load(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31)
@@ -125,4 +191,5 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
 
 # Main
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=8000)
+    port = int(os.getenv("PORT", 8000))
+    demo.launch(server_name="0.0.0.0", server_port=port)

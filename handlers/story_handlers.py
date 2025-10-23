@@ -19,6 +19,7 @@ from utils.config import (
     CHARACTERS_DIR,
     VIDEOS_DIR,
 )
+from models.config import DEFAULT_MODEL_ID
 def save_characters(characters):
     with open(CHARACTERS_JSON, "w") as f:
         if isinstance(characters, str):
@@ -42,7 +43,7 @@ def save_plot(plot):
 def generate_story(idea):
     system_instruction, prompt = generate_story_prompt(idea)
     history = ""
-    string_response = call_llm(system_instruction, prompt, history, "gemini-2.5-flash")
+    string_response = call_llm(system_instruction, prompt, history, DEFAULT_MODEL_ID)
     json_response = json.loads(string_response)
     characters = json_response["characters"]
     setting = json_response["setting"]
@@ -57,7 +58,7 @@ def generate_story(idea):
 def update_story(idea, characters):
     system_instruction, prompt = update_story_prompt(idea, characters)
     history = ""
-    string_response = call_llm(system_instruction, prompt, history, "gemini-2.5-flash")
+    string_response = call_llm(system_instruction, prompt, history, DEFAULT_MODEL_ID)
     json_response = json.loads(string_response)
     setting = json_response["setting"]
     plot = json_response["plot"]
@@ -138,10 +139,10 @@ def generate_character_images(*args):
     return generated_images
 
 
-def prepare_veo_prompt(story_json:list[dict], characters:list[dict]):
+def prepare_veo_prompt(story_json:list[dict], characters:list[dict], model_id:str):
     veo_prompts=[]
     system_instruction = """
-            You are a prompting expert, your task is to create the best prompt for Veo to generate a high-quality video for a scene. 
+            You are a prompting expert, your task is to create the best prompt for Veo to generate a high-quality video for a scene.
     """
     for scene in story_json:
         p_prompt = f"""
@@ -156,9 +157,9 @@ def prepare_veo_prompt(story_json:list[dict], characters:list[dict]):
             - Ambiance: Optional: How the color and light contribute to the scene, such as blue tones, night, or warm tones.
             - Dialog if any
 
-            Notice: 
-            - To differentiate between multiple characters in the images, use the most distinguish descriptive details vaiable. 
-            - Output as plain text as prompt without any explaination.  
+            Notice:
+            - To differentiate between multiple characters in the images, use the most distinguish descriptive details vaiable.
+            - Output as plain text as prompt without any explaination.
 
             Here is the scene description:
             {scene}
@@ -166,7 +167,7 @@ def prepare_veo_prompt(story_json:list[dict], characters:list[dict]):
             Here is the charaters description:
             {characters}
         """
-        pp = call_llm(system_instruction, p_prompt, "", "gemini-2.5-flash-preview-09-2025")
+        pp = call_llm(system_instruction, p_prompt, "", model_id)
         logger.info(f"Generated Veo prompt for scene {scene['scene_number']}: {pp[:100]}...")
         logger.debug(f"Full Veo prompt for scene {scene['scene_number']}: {pp}")
         veo_prompts.append(pp)
@@ -188,7 +189,8 @@ def developing_story(*args):
         args[32]: plot (str)
         args[33]: number_of_scenes (int)
         args[34]: duration_per_scene (int)
-        args[35]: style (str)
+        args[35]: model_id (str)
+        args[36]: style (str)
 
     Returns:
         list: [story_response] + flattened script_rows updates (144 values: 12 scenes * 3 lines * 4 fields)
@@ -207,10 +209,11 @@ def developing_story(*args):
     plot = args[32]
     number_of_scenes = int(args[33])
     duration_per_scene = int(args[34])
-    style = args[35]
+    model_id = args[35]
+    style = args[36]
     character_image_dict={}
 
-    logger.info(f"[{operation_id}] Starting story development: characters={number_of_characters}, scenes={number_of_scenes}, duration={duration_per_scene}s, style={style}")
+    logger.info(f"[{operation_id}] Starting story development: characters={number_of_characters}, scenes={number_of_scenes}, duration={duration_per_scene}s, style={style}, model={model_id}")
     
     # Build characters string for the prompt
     characters = []
@@ -240,7 +243,7 @@ def developing_story(*args):
     history = ""
     logger.info(f"[{operation_id}] Calling LLM to develop story")
     logger.debug(f"[{operation_id}] Story prompt: {prompt[:200]}...")
-    string_response = call_llm(system_instruction, prompt, history)
+    string_response = call_llm(system_instruction, prompt, history, model_id)
 
     # Save full string response to file
     with open(STORY_JSON, "w") as f:
@@ -332,7 +335,7 @@ def developing_story(*args):
         logger.info(f"[{operation_id}] Scene v31 {i}: Saved to scene_v31_{i}.png")
 
     logger.info(f"[{operation_id}] Generating Veo prompts for {len(story_json['story_scenes'])} scenes")
-    veo_prompts = prepare_veo_prompt(story_json["story_scenes"], characters)
+    veo_prompts = prepare_veo_prompt(story_json["story_scenes"], characters, model_id)
     for i, vp in enumerate(veo_prompts,1):
         video_prompt_v31_file = f"{VIDEOS_DIR}/scene_prompt_v31_{i}.txt"
         with open(video_prompt_v31_file, "w") as f:

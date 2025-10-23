@@ -2,7 +2,7 @@
 import gradio as gr
 
 def story_tab():
-    with gr.Tab("2. Story >>"):
+    with gr.Tab("🎭 The Cast"):
         # Character section
         with gr.Row():
             gr.Markdown("### Characters")
@@ -49,6 +49,13 @@ def story_tab():
         with gr.Row():
             sl_number_of_scenes = gr.Slider(label="Number of Scenes", minimum=1, maximum=12, step=1, interactive=True, value=3)
             sl_duration_per_scene = gr.Slider(label="Duration per Scene", minimum=5, maximum=8, step=1, interactive=True, value=8)
+        with gr.Row():
+            dd_story_model = gr.Dropdown(
+                choices=["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-preview-09-2025"],
+                label="Story Development Model",
+                interactive=True,
+                value="gemini-2.5-pro"
+            )
 
         with gr.Row():
             btn_developing = gr.Button("Developing")
@@ -57,4 +64,4 @@ def story_tab():
 
     return (sl_number_of_characters, character_rows, character_images, character_names, character_sexs, character_voices, character_descriptions,
             btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,
-            sl_duration_per_scene, btn_developing, ta_developed_story)
+            sl_duration_per_scene, dd_story_model, btn_developing, ta_developed_story)

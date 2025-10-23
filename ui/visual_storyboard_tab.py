@@ -3,7 +3,7 @@ import gradio as gr
 from handlers.ui_handlers import play_audio, update_storyboard_visibility
 
 def visual_storyboard_tab(sl_number_of_scenes):
-    with gr.Tab("3. Visual Storyboard >>"):
+    with gr.Tab("🎬 The Shoot"):
         max_scenes = 12
         storyboard_rows = []
         scene_images = []
