@@ -1,8 +1,6 @@
 
 import gradio as gr
 import json
-import shutil
-import glob
 
 from ui.idea_tab import idea_tab
 from ui.story_tab import story_tab
@@ -38,7 +36,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
      character_list, veo_model_id, cb_generate_audio, btn_generate_videos,
      btn_generate_audios, btn_merge_audios, storyboard_rows) = visual_storyboard_tab(sl_number_of_scenes)
     
-    short_ingredients, btn_merge_videos, num_scene, upload_btn = short_ingredients_tab()
+    short_ingredients, btn_merge_videos = short_ingredients_tab()
 
     merged_video = big_thing_tab()
 
@@ -164,16 +162,6 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         inputs=[sl_number_of_characters, ta_idea],
         outputs=character_rows + character_names + character_descriptions + [ta_setting, ta_plot],
         queue=False
-    )
-
-    def replace_video_files(file, scene_num):
-        os.remove(glob.glob(f"tmp/default/{scene_num}-*.mp4")[0])
-        shutil.copy(file, f"tmp/default/{scene_num}-custom.mp4")
-
-    upload_btn.upload(
-        fn=replace_video_files,
-        inputs=[upload_btn, num_scene],
-        outputs=None
     )
 
 if __name__ == "__main__":
