@@ -73,22 +73,11 @@ uv run python main.py # Start server
 
 | Step | Tab | Description |
 |------|-----|-------------|
-| 1️⃣ | **Idea** | Generate or input your story concept |
-| 2️⃣ | **Story** | Configure characters, settings, and plot |
-| 3️⃣ | **Visual Storyboard** | Generate videos from scenes |
-| 4️⃣ | **Short Ingredients** | Review individual scene videos |
-| 5️⃣ | **Big Thing** | View the final merged masterpiece |
-
----
-
-## ⚡ Key Features
-
-🤖 **Smart Story Generation** - AI creates characters, plots, and scenes from simple ideas
-🎨 **Character Creation** - Automated character portraits with Imagen 4.0
-🎥 **Video Generation** - Powered by Veo 2.0/3.0/3.1 models
-🗣️ **Audio Narration** - Text-to-speech for scene dialogues
-🎞️ **Auto Scene Conversion** - Seamless story-to-video pipeline
-✂️ **Video Post-Processing** - Merge, loop, and enhance your videos
+| 1️⃣ | **✨ The Spark** | Generate or input your story concept |
+| 2️⃣ | **🎭 The Cast** | Configure characters, settings, and plot |
+| 3️⃣ | **🎬 The Shoot** | Generate videos from scenes |
+| 4️⃣ | **🎞️ The Dailies** | Review individual scene videos |
+| 5️⃣ | **🎊 Premiere Night** | View the final merged masterpiece |
 
 ---
 
