@@ -1,11 +1,19 @@
 
 import os
+import json
 import random
 from utils.gen_video import upload_image, image_to_video, download_videos
 from models.config import VEO_STORAGE_BUCKET
 from utils.video_ts import merge_videos_moviepy
 from handlers.ui_handlers import clear_temp_files
-from utils.config import VIDEOS_DIR, MERGED_VIDEO_MP4
+from utils.config import STORY_JSON, VIDEOS_DIR, MERGED_VIDEO_MP4
+from utils.llm import call_llm
+
+
+def generate_video_v31(chosen_veo_model_id, is_generate_audio):
+    clear_temp_files(VIDEOS_DIR, "v31_0.mp4")
+    all_files = []
+    return all_files
 
 def generate_video(chosen_veo_model_id, is_generate_audio):
     clear_temp_files(VIDEOS_DIR, "_0.mp4")

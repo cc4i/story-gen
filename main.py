@@ -12,9 +12,9 @@ from ui.big_thing_tab import big_thing_tab
 
 from handlers.idea_handlers import generate_random_idea
 from handlers.story_handlers import generate_story, update_story, developing_story, generate_character_images
-from handlers.video_handlers import generate_video, show_generated_videos, show_merged_videos
+from handlers.video_handlers import generate_video, generate_video_v31, show_generated_videos, show_merged_videos
 from handlers.audio_handlers import generate_audio, show_generated_audios, merge_audios
-from handlers.ui_handlers import show_images_and_prompts, play_audio, update_character_visibility, show_story
+from handlers.ui_handlers import show_images_and_prompts, show_images_and_prompts_v31, play_audio, update_character_visibility, show_story
 from utils.video_ts import merge_videos_moviepy
 from utils.config import VIDEOS_DIR
 
@@ -92,15 +92,20 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         outputs=[ta_developed_story]
     )
     developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
-
+ 
 
     # Tab 3: Visual Storyboard v31 Tab
     (scene_images_v31, scene_texts_v31, veo_model_id_v31, cb_generate_audio_v31, 
      btn_generate_videos_v31, storyboard_rows_v31 ) = visual_storyboard_v31_tab(sl_number_of_scenes)
+    developing_story_step1.then(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31)
 
     # Tab 4: Short Ingredients Tab
     short_ingredients, btn_merge_videos = short_ingredients_tab()
     btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio], outputs=[short_ingredients])
+    btn_generate_videos_v31.click(
+        generate_video_v31,
+        inputs=[veo_model_id_v31, cb_generate_audio], outputs=[short_ingredients]
+    )
     btn_generate_audios.click(generate_audio, inputs=None, outputs=scene_audios_dropdown)
     btn_merge_audios.click(merge_audios, inputs=None, outputs=None)
 

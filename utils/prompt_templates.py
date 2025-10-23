@@ -114,7 +114,7 @@ def develop_story_prompt(characters: list[dict], setting: str, plot: str, number
     ## 4. Ensure each scene can be visualized within an ***{duration_per_scene}*** second timeframe.
     ## 5. Maintain a consistent tone and narrative throughout the story, whole story should be meaningful. 
     ## 6. Each character has a unique description, as much detail as possible in order to be consistent, and the description should be exactly the same for each scene.
-    ## 7. The image style should be ***{style}***.
+    ## 7. The image/video style should be ***{style}***.
     
     """+"""
     # OUTPUT AS JSON FORMAT: 
@@ -133,7 +133,8 @@ def develop_story_prompt(characters: list[dict], setting: str, plot: str, number
             ],
             "key_actions": ["Array of Strings. A step-by-step list of the main visual events and physical actions that happen in chronological order."],
             "key_visual_focus": "String. The single most important image of the scene; the 'hero shot' or 'thumbnail' that guides the director's emphasis.",
-            "sound_design": "String. All non-dialogue audio, including music (tone/style), ambient background sounds, and key sound effects (SFX)."
+            "sound_design": "String. All non-dialogue audio, including music (tone/style), ambient background sounds, and key sound effects (SFX).",
+            "style": "String. The image/video style."
             }
         ]
     }

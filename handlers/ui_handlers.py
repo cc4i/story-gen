@@ -1,9 +1,11 @@
 
 import gradio as gr
 import os
+import re
 import json
 from utils.acceptance import to_snake_case_v2
 from utils.config import (
+    STORY_JSON,
     CHARACTERS_JSON,
     SETTING_TXT,
     PLOT_TXT,
@@ -89,20 +91,127 @@ def show_images_and_prompts(number_of_scenes):
     scene_image_files = []
     if os.path.exists(path):
         for file in sorted(os.listdir(path)):
-            if file.startswith("scene_") and file.endswith(".png"):
+            # Match only files with pattern: scene_[integer].png
+            if re.match(r'^scene_\d+\.png$', file):
                 scene_image_files.append(os.path.join(path, file))
+
+    # Sort by scene number (numeric, not alphabetical)
+    def get_scene_number(path):
+        filename = os.path.basename(path)
+        match = re.search(r'scene_(\d+)\.png', filename)
+        return int(match.group(1)) if match else 0
+
+    scene_image_files.sort(key=get_scene_number)
     padded_images = (scene_image_files + [None] * MAX_SCENES)[:MAX_SCENES]
     
     scene_prompt_files = []
     if os.path.exists(path):
         for file in sorted(os.listdir(path)):
-            if file.startswith("scene_prompt_") and file.endswith(".txt"):
+            # Match only files with pattern: scene_prompt_[integer].txt
+            if re.match(r'^scene_prompt_\d+\.txt$', file):
                 scene_prompt_files.append(os.path.join(path, file))
-    
+
+    # Sort by scene number (numeric, not alphabetical)
+    def get_prompt_number(path):
+        filename = os.path.basename(path)
+        match = re.search(r'scene_prompt_(\d+)\.txt', filename)
+        return int(match.group(1)) if match else 0
+
+    scene_prompt_files.sort(key=get_prompt_number)
+
     generated_scene_prompts = []
     for f in scene_prompt_files:
-        with open(f, "r") as file:
-            generated_scene_prompts.append(json.dumps(json.loads(file.read()), indent=4))
+        try:
+            with open(f, "r") as file:
+                content = file.read().strip()
+                if content:
+                    # Try to parse as JSON and re-format, or just use as-is
+                    try:
+                        generated_scene_prompts.append(json.dumps(json.loads(content), indent=4))
+                    except json.JSONDecodeError:
+                        generated_scene_prompts.append(content)
+                else:
+                    generated_scene_prompts.append("")
+        except Exception as e:
+            print(f"Error reading {f}: {e}")
+            generated_scene_prompts.append("")
+
+    padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
+
+    return padded_images + padded_prompts
+
+def show_images_and_prompts_v31(number_of_scenes):
+    MAX_SCENES = 12
+    path = VIDEOS_DIR
+    
+    def get_scene_v31_number(path):
+        filename = os.path.basename(path)
+        match = re.search(r'scene_v31_(\d+)\.png', filename)
+        return int(match.group(1)) if match else 0
+
+    def get_character_images(num, data_json):
+        character_images=[]
+        for data in data_json["story_scenes"]:
+            if data["scene_number"]==num:
+                for n in data["characters"]:
+                    # Handle both string names and dict objects with 'name' field
+                    character_name = n["name"] if isinstance(n, dict) else n
+                    character_images.append(f"{CHARACTERS_DIR}/{to_snake_case_v2(character_name)}.png")
+        return character_images
+    
+    with open(STORY_JSON, "r") as f:
+        story_json = json.load(f)
+        
+    # Collect v31 scene files
+    scene_v31_files = []
+    if os.path.exists(path):
+        for file in os.listdir(path):
+            if re.match(r'^scene_v31_\d+\.png$', file):
+                scene_v31_files.append(file)
+
+    # Sort by scene number
+    scene_v31_files.sort(key=get_scene_v31_number)
+
+    references_image_files = []
+    for file in scene_v31_files:
+        all_images = []
+        all_images.append(os.path.join(path, file))
+        n = get_scene_v31_number(file)
+        character_images = get_character_images(n, story_json)
+        for ci in character_images:
+            if os.path.exists(ci):
+                all_images.append(ci)
+        references_image_files.append(all_images)
+
+    padded_images = (references_image_files + [None] * MAX_SCENES)[:MAX_SCENES]
+
+    scene_prompt_files = []
+    if os.path.exists(path):
+        for file in os.listdir(path):
+            if re.match(r'^scene_prompt_v31_\d+\.txt$', file):
+                scene_prompt_files.append(os.path.join(path, file))
+
+    # Sort by scene number
+    def get_prompt_v31_number(path):
+        filename = os.path.basename(path)
+        match = re.search(r'scene_prompt_v31_(\d+)\.txt', filename)
+        return int(match.group(1)) if match else 0
+
+    scene_prompt_files.sort(key=get_prompt_v31_number)
+
+    generated_scene_prompts = []
+    for f in scene_prompt_files:
+        try:
+            with open(f, "r") as file:
+                content = file.read().strip()
+                if content:
+                    generated_scene_prompts.append(content)
+                else:
+                    generated_scene_prompts.append("")
+        except Exception as e:
+            print(f"Error reading {f}: {e}")
+            generated_scene_prompts.append("")
+
     padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
 
     return padded_images + padded_prompts

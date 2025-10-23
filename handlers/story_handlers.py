@@ -113,6 +113,42 @@ def generate_character_images(*args):
 
     return generated_images
 
+
+def prepare_veo_prompt(story_json:list[dict], characters:list[dict]):
+    veo_prompts=[]
+    system_instruction = """
+            You are a prompting expert, your task is to create the best prompt for Veo to generate a high-quality video for a scene. 
+    """
+    for scene in story_json:
+        p_prompt = f"""
+            Based on the scene description provided below, create a detailed prompt for generating a high-quality video. Include the following elements in your prompt:
+
+            - Subject: The object, person, animal, or scenery that you want in your video.
+            - Context: The background or context in which the subject is placed.
+            - Action: What the subject is doing (for example, walking, running, or turning their head).
+            - Style: This can be general or very specific. Consider using specific film style keywords, such as horror film, film noir, or animated styles like cartoon style render.
+            - Camera motion: Optional: What the camera is doing, such as aerial view, eye-level, top-down shot, or low-angle shot.
+            - Composition: Optional: How the shot is framed, such as wide shot, close-up, or extreme close-up.
+            - Ambiance: Optional: How the color and light contribute to the scene, such as blue tones, night, or warm tones.
+            - Dialog if any
+
+            Notice: 
+            - To differentiate between multiple characters in the images, use the most distinguish descriptive details vaiable. 
+            - Output as plain text as prompt without any explaination.  
+
+            Here is the scene description:
+            {scene}
+
+            Here is the charaters description:
+            {characters}
+        """
+        pp = call_llm(system_instruction, p_prompt, "", "gemini-2.5-flash-preview-09-2025")
+        print(f"#Scene {scene["scene_number"]} prompt:  {pp}")
+        veo_prompts.append(pp)
+
+    return veo_prompts
+
+
 def developing_story(*args):
     """Develop the full story with scenes, images, and scripts
 
@@ -156,14 +192,15 @@ def developing_story(*args):
                 "name": character_names[i],
                 "sex": character_sexs[i],
                 "voice": character_voices[i],
-                "description": character_descriptions[i]
+                "description": character_descriptions[i],
+                "style": style,
             })
         if character_names[i] and character_descriptions[i]:
             character_image_dict[character_names[i]]=character_images[i]
 
     # Clear old video files
-    check_folder("tmp/default/videos")
-    clear_temp_files("tmp/default/videos", ".*")
+    check_folder(f"{VIDEOS_DIR}")
+    clear_temp_files(f"{VIDEOS_DIR}", ".*")
 
     # Save the story data
     save_characters(characters)
@@ -174,15 +211,15 @@ def developing_story(*args):
     system_instruction, prompt = develop_story_prompt(characters, setting, plot, number_of_scenes, duration_per_scene, style)
     history = ""
     logger.info(f"Developing story with prompt: {prompt}")
-    string_response = call_llm(system_instruction, prompt, history, "gemini-2.5-flash")
+    string_response = call_llm(system_instruction, prompt, history)
 
     # Save full string response to file
-    with open("tmp/default/story.json", "w") as f:
+    with open(STORY_JSON, "w") as f:
         f.write(string_response)
-    json_response = json.loads(string_response)
+    story_json = json.loads(string_response)
 
-    # Generate images and save prompts/scripts for each scene
-    for i, scene in enumerate(json_response["story_scenes"],1):
+    # Generate images and save prompts/scripts for each scene in "Visual Storyboard" Tab
+    for i, scene in enumerate(story_json["story_scenes"],1):
         reference_images = []
 
         # Collect valid reference images for characters in this scene
@@ -209,7 +246,7 @@ def developing_story(*args):
 
         # Try with reference images first, fallback to no references if it fails
         try:
-            image_prompt = f"""
+            key_image_prompt = f"""
                 Generate a key image for the scene based on following description:
                 - location: ***{scene["location"]}***
                 - atmosphere: ***{scene["atmosphere"]}***
@@ -220,25 +257,51 @@ def developing_story(*args):
             """
             if reference_images:
                 logger.info(f"Scene {i}: Generating with {len(reference_images)} reference image(s)")
-                generated_image_data = gen_images_by_banana(prompt=image_prompt, reference_images=reference_images)[0]
+                generated_image_data = gen_images_by_banana(prompt=key_image_prompt, reference_images=reference_images)[0]
             else:
                 logger.info(f"Scene {i}: Generating without reference images")
-                generated_image_data = gen_images_by_banana(prompt=image_prompt)[0]
+                generated_image_data = gen_images_by_banana(prompt=key_image_prompt)[0]
         except Exception as e:
             logger.error(f"Scene {i}: Failed with reference images: {e}")
             logger.info(f"Scene {i}: Retrying without reference images")
-            generated_image_data = gen_images_by_banana(prompt=image_prompt)[0]
+            generated_image_data = gen_images_by_banana(prompt=key_image_prompt)[0]
 
         image = Image.open(BytesIO(generated_image_data))
-        image.save(f"tmp/default/videos/scene_{i}.png")
-        logger.info(f"Scene {i}: Saved image to tmp/default/videos/scene_{i}.png")
+        image.save(f"{VIDEOS_DIR}/scene_{i}.png")
+        logger.info(f"Scene {i}: Saved image to {VIDEOS_DIR}/scene_{i}.png")
 
-        video_prompt_file = f"tmp/default/videos/scene_prompt_{i}.txt"
+        video_prompt_file = f"{VIDEOS_DIR}/scene_prompt_{i}.txt"
         with open(video_prompt_file, "w") as f:
             f.write(json.dumps(scene, indent=4))
 
-        video_script_file = f"tmp/default/videos/scene_script_{i}.txt"
+        video_script_file = f"{VIDEOS_DIR}/scene_script_{i}.txt"
         with open(video_script_file, "w") as f:
             f.write(json.dumps(scene["dialogue"], indent=4))
+    ###
 
-    return json.dumps(json_response, indent=4)
+    # Generate images and save prompts for each scene in "Visual Storyboard v31" Tab
+    for i, scene in enumerate(story_json["story_scenes"],1):
+        try:
+            scene_image_prompt = f"""
+                Generate a scene image without characters for the scene based on following description:
+                - location: ***{scene["location"]}***
+                - atmosphere: ***{scene["atmosphere"]}***
+            """
+            logger.info(f"Scene {i}: Generating the scene image without characters")
+            generated_image_data = gen_images_by_banana(prompt=scene_image_prompt)[0]
+        except Exception as e:
+            logger.error(f"Scene {i}: Failed with: {e}")
+            logger.info(f"Scene {i}: Retrying to generate the scene image")
+            generated_image_data = gen_images_by_banana(prompt=scene_image_prompt)[0]
+
+        image = Image.open(BytesIO(generated_image_data))
+        image.save(f"{VIDEOS_DIR}/scene_v31_{i}.png")
+        logger.info(f"Scene {i}: Saved image to {VIDEOS_DIR}/scene_v31_{i}.png")
+    veo_prompts = prepare_veo_prompt(story_json["story_scenes"], characters)
+    for i, vp in enumerate(veo_prompts,1):
+        video_prompt_v31_file = f"{VIDEOS_DIR}/scene_prompt_v31_{i}.txt"
+        with open(video_prompt_v31_file, "w") as f:
+            f.write(vp)
+    ###
+
+    return json.dumps(story_json, indent=4)
