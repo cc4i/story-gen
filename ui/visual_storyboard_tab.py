@@ -17,7 +17,7 @@ def visual_storyboard_tab(sl_number_of_scenes):
         for i in range(max_scenes):
             with gr.Row(visible=(i < sl_number_of_scenes.value)) as row:
                 storyboard_rows.append(row)
-                scene_images.append(gr.Image(label=f"Scene #{i+1}", type="filepath", scale=1))
+                scene_images.append(gr.Image(label=f"Scene #{i+1}", type="filepath", scale=1, interactive=True))
                 with gr.Column(scale=2):
                     scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", interactive=True))
                     with gr.Row():

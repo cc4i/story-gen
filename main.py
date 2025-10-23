@@ -1,6 +1,8 @@
 
 import gradio as gr
 import json
+import os
+import shutil
 
 from ui.idea_tab import idea_tab
 from ui.story_tab import story_tab
@@ -163,6 +165,13 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
         outputs=character_rows + character_names + character_descriptions + [ta_setting, ta_plot],
         queue=False
     )
+    
+    for i in range(len(scene_images)):
+        scene_images[i].upload(
+            fn=lambda path, id=i+1: shutil.copyfile(path, f"tmp/images/default/scene_{id}.{path.split(".")[1]}"),
+            inputs=[scene_images[i]],
+            outputs=None
+        )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=8000)
