@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
 from models.config import GEMINI_API_KEY
+from utils.logger import logger
 import random
 import time
 import struct
@@ -59,7 +60,8 @@ def generate_audio_by_gemini(message, gender, order, character_name, start_time,
         speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name))),
     )
 
-    print(f"Generating audio for {message} with voice {voice_name} and model {model}")
+    logger.info(f"Generating audio: voice={voice_name}, model={model}, character={character_name}, order={order}, start_time={start_time}s")
+    logger.debug(f"Audio generation message: {message[:100]}...")
 
     file_index = 0
     for chunk in client.models.generate_content_stream(
@@ -83,9 +85,11 @@ def generate_audio_by_gemini(message, gender, order, character_name, start_time,
             if file_extension is None:
                 file_extension = ".wav"
                 data_buffer = convert_to_wav(inline_data.data, inline_data.mime_type)
-            return save_binary_file(f"{file_name}{file_extension}", data_buffer)
+            file_path = save_binary_file(f"{file_name}{file_extension}", data_buffer)
+            logger.info(f"Audio generated successfully: {file_name}{file_extension}")
+            return file_path
         else:
-            print(chunk.text)
+            logger.debug(f"Audio generation chunk text response: {chunk.text}")
 
 
 

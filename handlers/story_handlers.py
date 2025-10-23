@@ -1,6 +1,8 @@
 import gradio as gr
 import json
 import os
+import uuid
+import time
 from utils.llm import call_llm
 from utils.logger import logger
 from utils.prompt_templates import generate_story_prompt, update_story_prompt, develop_story_prompt
@@ -78,6 +80,9 @@ def generate_character_images(*args):
         args[19:25]: character_descriptions (6 values)
         args[25]: style (str)
     """
+    operation_id = str(uuid.uuid4())[:8]
+    start_time = time.time()
+
     check_folder("tmp/default/characters")
     clear_temp_files("tmp/default/characters", ".*")
 
@@ -89,27 +94,46 @@ def generate_character_images(*args):
     character_descriptions = args[19:25]
     style = args[25]
 
+    logger.info(f"[{operation_id}] Starting character image generation: count={number_of_characters}, style={style}")
 
     generated_images = []
     for i in range(number_of_characters):
-
         # Create character image prompt
         char_prompt = f"""
-            # Full-body shot of the character: ***{character_names[i]}*** 
+            # Full-body shot of the character: ***{character_names[i]}***
             # Sex: ***{character_sexs[i]}***
             # A ***{style}*** image of ***{character_descriptions[i]}***
             # Background: ***The background must be a solid, clean, plain white background, isolating the character.***
         """
 
-        images_data=gen_images_by_banana(char_prompt)
-        image = Image.open(BytesIO(images_data[0]))
-        image_path = f"tmp/default/characters/{to_snake_case_v2(character_names[i])}.png"
-        image.save(image_path)
-        generated_images.append(image_path)
+        logger.info(f"[{operation_id}] Character {i+1}/{number_of_characters}: Generating image for '{character_names[i]}'")
+        logger.debug(f"[{operation_id}] Character prompt: {char_prompt[:100]}...")
+
+        try:
+            images_data = gen_images_by_banana(char_prompt)
+            image = Image.open(BytesIO(images_data[0]))
+            image_path = f"tmp/default/characters/{to_snake_case_v2(character_names[i])}.png"
+            image.save(image_path)
+            generated_images.append(image_path)
+            logger.info(f"[{operation_id}] Character {i+1}: Saved to {to_snake_case_v2(character_names[i])}.png")
+        except Exception as e:
+            logger.error(
+                f"[{operation_id}] Character {i+1} ({character_names[i]}): Image generation failed: {str(e)}",
+                exc_info=True,
+                extra={
+                    "operation_id": operation_id,
+                    "character_name": character_names[i],
+                    "character_index": i
+                }
+            )
+            generated_images.append(None)
 
     # Pad with None to match max characters (6)
     while len(generated_images) < 6:
         generated_images.append(None)
+
+    duration = time.time() - start_time
+    logger.info(f"[{operation_id}] Character image generation completed: total={number_of_characters}, duration={duration:.2f}s")
 
     return generated_images
 
@@ -143,7 +167,8 @@ def prepare_veo_prompt(story_json:list[dict], characters:list[dict]):
             {characters}
         """
         pp = call_llm(system_instruction, p_prompt, "", "gemini-2.5-flash-preview-09-2025")
-        print(f"#Scene {scene["scene_number"]} prompt:  {pp}")
+        logger.info(f"Generated Veo prompt for scene {scene['scene_number']}: {pp[:100]}...")
+        logger.debug(f"Full Veo prompt for scene {scene['scene_number']}: {pp}")
         veo_prompts.append(pp)
 
     return veo_prompts
@@ -168,7 +193,8 @@ def developing_story(*args):
     Returns:
         list: [story_response] + flattened script_rows updates (144 values: 12 scenes * 3 lines * 4 fields)
     """
-    
+    operation_id = str(uuid.uuid4())[:8]
+    start_time = time.time()
 
     # Parse arguments
     number_of_characters = int(args[0])
@@ -183,6 +209,8 @@ def developing_story(*args):
     duration_per_scene = int(args[34])
     style = args[35]
     character_image_dict={}
+
+    logger.info(f"[{operation_id}] Starting story development: characters={number_of_characters}, scenes={number_of_scenes}, duration={duration_per_scene}s, style={style}")
     
     # Build characters string for the prompt
     characters = []
@@ -210,15 +238,18 @@ def developing_story(*args):
     # Generate the story development
     system_instruction, prompt = develop_story_prompt(characters, setting, plot, number_of_scenes, duration_per_scene, style)
     history = ""
-    logger.info(f"Developing story with prompt: {prompt}")
+    logger.info(f"[{operation_id}] Calling LLM to develop story")
+    logger.debug(f"[{operation_id}] Story prompt: {prompt[:200]}...")
     string_response = call_llm(system_instruction, prompt, history)
 
     # Save full string response to file
     with open(STORY_JSON, "w") as f:
         f.write(string_response)
     story_json = json.loads(string_response)
+    logger.info(f"[{operation_id}] Story developed successfully, saved to {STORY_JSON}")
 
     # Generate images and save prompts/scripts for each scene in "Visual Storyboard" Tab
+    logger.info(f"[{operation_id}] Generating images for {len(story_json['story_scenes'])} scenes")
     for i, scene in enumerate(story_json["story_scenes"],1):
         reference_images = []
 
@@ -229,13 +260,13 @@ def developing_story(*args):
             img_path = f"tmp/default/characters/{to_snake_case_v2(character_name)}.png"
             if os.path.exists(img_path):
                 reference_images.append(img_path)
-                logger.info(f"Scene {i}: Added reference image for character '{character_name}': {img_path}")
+                logger.debug(f"[{operation_id}] Scene {i}: Added reference image for character '{character_name}'")
             else:
-                logger.warning(f"Scene {i}: Reference image not found for character '{character_name}': {img_path}")
+                logger.warning(f"[{operation_id}] Scene {i}: Reference image not found for character '{character_name}': {img_path}")
 
         # Limit to max 3 reference images (API best practice)
         if len(reference_images) > 3:
-            logger.warning(f"Scene {i}: Found {len(reference_images)} reference images, using only first 3")
+            logger.warning(f"[{operation_id}] Scene {i}: Found {len(reference_images)} reference images, using only first 3")
             reference_images = reference_images[:3]
 
         # Extract character names (handle both string and dict formats)
@@ -256,19 +287,19 @@ def developing_story(*args):
                 - All characters must be front face and aligned with referenced character image.
             """
             if reference_images:
-                logger.info(f"Scene {i}: Generating with {len(reference_images)} reference image(s)")
+                logger.info(f"[{operation_id}] Scene {i}/{number_of_scenes}: Generating with {len(reference_images)} reference image(s)")
                 generated_image_data = gen_images_by_banana(prompt=key_image_prompt, reference_images=reference_images)[0]
             else:
-                logger.info(f"Scene {i}: Generating without reference images")
+                logger.info(f"[{operation_id}] Scene {i}/{number_of_scenes}: Generating without reference images")
                 generated_image_data = gen_images_by_banana(prompt=key_image_prompt)[0]
         except Exception as e:
-            logger.error(f"Scene {i}: Failed with reference images: {e}")
-            logger.info(f"Scene {i}: Retrying without reference images")
+            logger.error(f"[{operation_id}] Scene {i}: Image generation failed with reference images: {str(e)}", exc_info=True)
+            logger.info(f"[{operation_id}] Scene {i}: Retrying without reference images")
             generated_image_data = gen_images_by_banana(prompt=key_image_prompt)[0]
 
         image = Image.open(BytesIO(generated_image_data))
         image.save(f"{VIDEOS_DIR}/scene_{i}.png")
-        logger.info(f"Scene {i}: Saved image to {VIDEOS_DIR}/scene_{i}.png")
+        logger.info(f"[{operation_id}] Scene {i}: Saved image to scene_{i}.png")
 
         video_prompt_file = f"{VIDEOS_DIR}/scene_prompt_{i}.txt"
         with open(video_prompt_file, "w") as f:
@@ -280,28 +311,35 @@ def developing_story(*args):
     ###
 
     # Generate images and save prompts for each scene in "Visual Storyboard v31" Tab
+    logger.info(f"[{operation_id}] Generating v31 scene images (without characters)")
     for i, scene in enumerate(story_json["story_scenes"],1):
         try:
             scene_image_prompt = f"""
                 Generate a scene image without characters for the scene based on following description:
                 - location: ***{scene["location"]}***
                 - atmosphere: ***{scene["atmosphere"]}***
+                - style: ***{style}***
             """
-            logger.info(f"Scene {i}: Generating the scene image without characters")
+            logger.info(f"[{operation_id}] Scene v31 {i}/{number_of_scenes}: Generating scene image")
             generated_image_data = gen_images_by_banana(prompt=scene_image_prompt)[0]
         except Exception as e:
-            logger.error(f"Scene {i}: Failed with: {e}")
-            logger.info(f"Scene {i}: Retrying to generate the scene image")
+            logger.error(f"[{operation_id}] Scene v31 {i}: Image generation failed: {str(e)}", exc_info=True)
+            logger.info(f"[{operation_id}] Scene v31 {i}: Retrying scene image generation")
             generated_image_data = gen_images_by_banana(prompt=scene_image_prompt)[0]
 
         image = Image.open(BytesIO(generated_image_data))
         image.save(f"{VIDEOS_DIR}/scene_v31_{i}.png")
-        logger.info(f"Scene {i}: Saved image to {VIDEOS_DIR}/scene_v31_{i}.png")
+        logger.info(f"[{operation_id}] Scene v31 {i}: Saved to scene_v31_{i}.png")
+
+    logger.info(f"[{operation_id}] Generating Veo prompts for {len(story_json['story_scenes'])} scenes")
     veo_prompts = prepare_veo_prompt(story_json["story_scenes"], characters)
     for i, vp in enumerate(veo_prompts,1):
         video_prompt_v31_file = f"{VIDEOS_DIR}/scene_prompt_v31_{i}.txt"
         with open(video_prompt_v31_file, "w") as f:
             f.write(vp)
     ###
+
+    duration = time.time() - start_time
+    logger.info(f"[{operation_id}] Story development completed: scenes={number_of_scenes}, total_images={number_of_scenes * 2}, duration={duration:.2f}s")
 
     return json.dumps(story_json, indent=4)

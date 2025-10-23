@@ -109,12 +109,14 @@ def develop_story_prompt(characters: list[dict], setting: str, plot: str, number
 
     # INSTRUCTIONS:
     ## 1. Be Objective, Specific, and Systematic.
-    ## 2. Develop a story that incorporates all the provided character details, setting, and plot. Maximum ***2*** characters each scene.
+    ## 2. Develop a story that incorporates all the provided character details, setting, and plot. Maximum ***2*** characters each scene, characters must choose from provided character list.
     ## 3. Divide the story into ***{number_of_scenes}*** consecutive scenes.
     ## 4. Ensure each scene can be visualized within an ***{duration_per_scene}*** second timeframe.
     ## 5. Maintain a consistent tone and narrative throughout the story, whole story should be meaningful. 
     ## 6. Each character has a unique description, as much detail as possible in order to be consistent, and the description should be exactly the same for each scene.
     ## 7. The image/video style should be ***{style}***.
+    ## 8. Make sure Continuity between scenes and the whole things together from begin to end are smoothly. 
+
     
     """+"""
     # OUTPUT AS JSON FORMAT: 

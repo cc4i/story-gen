@@ -104,7 +104,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio], outputs=[short_ingredients])
     btn_generate_videos_v31.click(
         generate_video_v31,
-        inputs=[veo_model_id_v31, cb_generate_audio], outputs=[short_ingredients]
+        inputs=scene_images_v31 + scene_texts_v31 + [veo_model_id_v31, cb_generate_audio], outputs=[short_ingredients]
     )
     btn_generate_audios.click(generate_audio, inputs=None, outputs=scene_audios_dropdown)
     btn_merge_audios.click(merge_audios, inputs=None, outputs=None)
@@ -116,6 +116,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     # Load the existed images and prompts if any
     demo.load(show_story, inputs=None, outputs=[sl_number_of_characters] + character_rows + character_images + character_names + character_sexs + character_voices + character_descriptions + [ta_setting] + [ta_plot])
     demo.load(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
+    demo.load(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31)
     demo.load(show_generated_videos, inputs=None, outputs=[short_ingredients])
     demo.load(show_generated_audios, inputs=None, outputs=scene_audios_dropdown)
     demo.load(show_merged_videos, inputs=None, outputs=[merged_video])

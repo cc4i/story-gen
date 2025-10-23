@@ -4,6 +4,7 @@ import os
 import re
 import json
 from utils.acceptance import to_snake_case_v2
+from utils.logger import logger
 from utils.config import (
     STORY_JSON,
     CHARACTERS_JSON,
@@ -26,7 +27,7 @@ def clear_temp_files(path: str, extension: str):
             os.remove(os.path.join(path, file))
 
 def play_audio(audio_file):
-    print(f"audio_file: {audio_file}")
+    logger.debug(f"Playing audio file: {audio_file}")
     return audio_file
 
 def update_storyboard_visibility(count):
@@ -56,6 +57,8 @@ def show_story():
             with open(characters_file_path, "r") as f:
                 character_list = json.load(f)
                 num_characters = len(character_list)
+                logger.info(f"Loading {num_characters} characters from {characters_file_path}")
+
                 for idx, char in enumerate(character_list):
                     if idx < MAX_CHARACTERS:
                         names[idx] = char.get("name", "")
@@ -64,21 +67,31 @@ def show_story():
                         descriptions[idx] = char.get("description", "")
                         if os.path.exists(characters_images_dir):
                             image_path = os.path.join(characters_images_dir, f"{to_snake_case_v2(names[idx])}.png")
-                            print(f"image_path: {image_path}")
+                            logger.debug(f"Character {idx+1}: name={names[idx]}, image_path={image_path}")
                             if os.path.exists(image_path):
                                 character_image_paths[idx] = image_path
-                                print(f"character_image_paths: {character_image_paths}")
+                                logger.debug(f"Loaded character image: {os.path.basename(image_path)}")
 
         if os.path.exists(setting_file_path):
             with open(setting_file_path, "r") as f:
                 setting = f.read()
+                logger.debug(f"Loaded setting from {setting_file_path}: {len(setting)} chars")
 
         if os.path.exists(plot_file_path):
             with open(plot_file_path, "r") as f:
                 plot = f.read()
+                logger.debug(f"Loaded plot from {plot_file_path}: {len(plot)} chars")
 
     except Exception as e:
-        print(f"An unexpected error occurred in show_story: {e}")
+        logger.error(
+            f"Error loading story data: {str(e)}",
+            exc_info=True,
+            extra={
+                "characters_file": characters_file_path,
+                "setting_file": setting_file_path,
+                "plot_file": plot_file_path
+            }
+        )
 
     character_row_visibility = update_character_visibility(num_characters)
 
@@ -87,7 +100,7 @@ def show_story():
 def show_images_and_prompts(number_of_scenes):
     MAX_SCENES = 12
     path = VIDEOS_DIR
-    
+
     scene_image_files = []
     if os.path.exists(path):
         for file in sorted(os.listdir(path)):
@@ -102,8 +115,9 @@ def show_images_and_prompts(number_of_scenes):
         return int(match.group(1)) if match else 0
 
     scene_image_files.sort(key=get_scene_number)
+    logger.info(f"Loaded {len(scene_image_files)} scene images from {path}")
     padded_images = (scene_image_files + [None] * MAX_SCENES)[:MAX_SCENES]
-    
+
     scene_prompt_files = []
     if os.path.exists(path):
         for file in sorted(os.listdir(path)):
@@ -133,9 +147,14 @@ def show_images_and_prompts(number_of_scenes):
                 else:
                     generated_scene_prompts.append("")
         except Exception as e:
-            print(f"Error reading {f}: {e}")
+            logger.error(
+                f"Error reading scene prompt file: {str(e)}",
+                exc_info=True,
+                extra={"file_path": f}
+            )
             generated_scene_prompts.append("")
 
+    logger.info(f"Loaded {len(generated_scene_prompts)} scene prompts")
     padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
 
     return padded_images + padded_prompts
@@ -209,9 +228,14 @@ def show_images_and_prompts_v31(number_of_scenes):
                 else:
                     generated_scene_prompts.append("")
         except Exception as e:
-            print(f"Error reading {f}: {e}")
+            logger.error(
+                f"Error reading v31 scene prompt file: {str(e)}",
+                exc_info=True,
+                extra={"file_path": f}
+            )
             generated_scene_prompts.append("")
 
+    logger.info(f"Loaded {len(generated_scene_prompts)} v31 scene prompts with {len(references_image_files)} reference image sets")
     padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
 
     return padded_images + padded_prompts

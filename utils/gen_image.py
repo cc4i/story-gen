@@ -3,10 +3,12 @@ import os
 from google import genai
 from google.genai import types
 from models.config import GEMINI_API_KEY
+from utils.logger import logger
 
 def gen_images(model_id, prompt, negative_prompt, number_of_images, aspect_ratio, is_enhance):
     client = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version': 'v1'})
-    print(f"model_id: {model_id}, prompt: {prompt}, negative_prompt: {negative_prompt}, number_of_images: {number_of_images}, aspect_ratio: {aspect_ratio}, is_enhance: {is_enhance}")
+    logger.info(f"Image generation: model={model_id}, count={number_of_images}, aspect_ratio={aspect_ratio}, enhance={is_enhance}")
+    logger.debug(f"Prompt: {prompt}, negative_prompt: {negative_prompt}")
     if is_enhance=="yes":
         enhance_prompt = True
     else:
@@ -64,14 +66,14 @@ def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_
     # Validate aspect ratio
     valid_aspect_ratios = ["1:1", "2:3", "3:2", "4:3", "5:4", "9:16", "16:9", "21:9"]
     if aspect_ratio not in valid_aspect_ratios:
-        print(f"Warning: Invalid aspect ratio '{aspect_ratio}'. Using '1:1' instead.")
+        logger.warning(f"Invalid aspect ratio '{aspect_ratio}'. Using '1:1' instead.")
         aspect_ratio = "1:1"
 
     # Validate and process reference images
     processed_ref_images = []
     if reference_images:
         if len(reference_images) > 3:
-            print(f"Warning: Maximum 3 reference images allowed. Using first 3 images only.")
+            logger.warning(f"Maximum 3 reference images allowed. Using first 3 images only.")
             reference_images = reference_images[:3]
 
         for idx, ref_img in enumerate(reference_images):
@@ -79,38 +81,36 @@ def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_
                 if isinstance(ref_img, str):
                     # File path - verify it exists first
                     if not os.path.exists(ref_img):
-                        print(f"Error: Reference image file does not exist: {ref_img}")
+                        logger.error(f"Reference image file does not exist: {ref_img}")
                         continue
                     # Load the image
                     img = Image.open(ref_img)
                     # Convert to RGB if needed (API might not accept RGBA or other modes)
                     if img.mode not in ['RGB', 'L']:
-                        print(f"Converting reference image {idx+1} from {img.mode} to RGB")
+                        logger.debug(f"Converting reference image {idx+1} from {img.mode} to RGB")
                         img = img.convert('RGB')
                     processed_ref_images.append(img)
-                    print(f"Loaded reference image {idx+1}: {ref_img} ({img.size}, {img.mode})")
+                    logger.debug(f"Loaded reference image {idx+1}: {ref_img} ({img.size}, {img.mode})")
                 elif isinstance(ref_img, Image.Image):
                     # Already a PIL Image
                     img = ref_img
                     if img.mode not in ['RGB', 'L']:
-                        print(f"Converting reference image {idx+1} from {img.mode} to RGB")
+                        logger.debug(f"Converting reference image {idx+1} from {img.mode} to RGB")
                         img = img.convert('RGB')
                     processed_ref_images.append(img)
-                    print(f"Using reference image {idx+1}: PIL Image object ({img.size}, {img.mode})")
+                    logger.debug(f"Using reference image {idx+1}: PIL Image object ({img.size}, {img.mode})")
                 else:
-                    print(f"Warning: Reference image {idx+1} has invalid type: {type(ref_img)}. Skipping.")
+                    logger.warning(f"Reference image {idx+1} has invalid type: {type(ref_img)}. Skipping.")
             except Exception as e:
-                print(f"Error: Could not load reference image {idx+1}: {e}")
+                logger.error(f"Could not load reference image {idx+1}: {str(e)}")
 
     # Combine prompt with negative prompt if provided
     full_prompt = prompt
     if negative_prompt:
         full_prompt = f"{prompt}. Avoid: {negative_prompt}"
 
-    print(f"Generating image with Gemini 2.5 Flash Image model")
-    print(f"Prompt: {full_prompt}")
-    print(f"Aspect ratio: {aspect_ratio}")
-    print(f"Reference images: {len(processed_ref_images)}")
+    logger.info(f"Generating image with Gemini 2.5 Flash Image model: aspect_ratio={aspect_ratio}, reference_images={len(processed_ref_images)}")
+    logger.debug(f"Full prompt: {full_prompt}")
 
     generated_images = []
 
@@ -143,12 +143,12 @@ def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_
 
             if image_parts:
                 generated_images.append(image_parts[0])
-                print(f"Successfully generated image {i+1}/{number_of_images}")
+                logger.info(f"Successfully generated image {i+1}/{number_of_images}")
             else:
-                print(f"Warning: No image data in response for image {i+1}/{number_of_images}")
+                logger.warning(f"No image data in response for image {i+1}/{number_of_images}")
 
         except Exception as e:
-            print(f"Error generating image {i+1}/{number_of_images}: {e}")
+            logger.error(f"Image generation failed {i+1}/{number_of_images}: {str(e)}")
             raise Exception(f"Gemini image generation failed: {str(e)}")
 
     return generated_images
