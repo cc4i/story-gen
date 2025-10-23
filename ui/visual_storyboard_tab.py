@@ -10,9 +10,7 @@ def visual_storyboard_tab(sl_number_of_scenes):
         scene_texts = []
         scene_audios_dropdown = []
         scene_audios = []
-        max_scripts = 3
-        script_rows = []
-        character_list = []
+        script_texts = []
 
         for i in range(max_scenes):
             with gr.Row(visible=(i < sl_number_of_scenes.value)) as row:
@@ -20,16 +18,7 @@ def visual_storyboard_tab(sl_number_of_scenes):
                 scene_images.append(gr.Image(label=f"Scene #{i+1}", type="filepath", scale=1, interactive=True))
                 with gr.Column(scale=2):
                     scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", interactive=True))
-                    with gr.Row():
-                        with gr.Column():
-                            rows = []
-                            for j in range(max_scripts):
-                                with gr.Row(visible=False) as row:
-                                    ta_char = gr.TextArea(label=f"Character #{j+1}", interactive=True)
-                                    ta_script = gr.TextArea(label=f"Script #{j+1}", interactive=True)
-                                    num_start_time = gr.Number(label=f"Start Time #{j+1}", minimum=0, maximum=7, step=1, interactive=True)
-                                    rows.append([row, ta_char, ta_script, num_start_time])
-                            script_rows.append(rows)
+                    script_texts.append(gr.TextArea(label=f"Script #{i+1}", interactive=True))
 
                     with gr.Row():
                          audio_file_path = gr.Dropdown(label=f"Audio #{i+1}", scale=3, allow_custom_value=True, interactive=True)
@@ -64,5 +53,5 @@ def visual_storyboard_tab(sl_number_of_scenes):
             btn_generate_audios = gr.Button("Generate audios(Optional)")
             btn_merge_audios = gr.Button("Merge audios(Optional)")
             
-    return scene_images, scene_texts, scene_audios_dropdown, scene_audios, script_rows, character_list, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows
+    return scene_images, scene_texts, scene_audios_dropdown, scene_audios, script_texts, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows
 
