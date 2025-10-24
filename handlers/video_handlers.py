@@ -303,10 +303,20 @@ def generate_video_v31_with_validation(*args):
                 new_files = download_videos(op, "default", f"{scene_num}", False)
 
                 if new_files:
-                    # Replace old file in list
+                    # Replace old file in list and delete failed video
                     old_file_idx = scene_num - 1
                     if old_file_idx < len(all_files):
-                        logger.info(f"Scene {scene_num}: Replacing {all_files[old_file_idx]} with {new_files[0]}")
+                        old_video_path = all_files[old_file_idx]
+                        logger.info(f"Scene {scene_num}: Replacing {old_video_path} with {new_files[0]}")
+
+                        # Delete the failed video file
+                        try:
+                            if os.path.exists(old_video_path):
+                                os.remove(old_video_path)
+                                logger.info(f"Scene {scene_num}: Deleted failed video: {old_video_path}")
+                        except Exception as delete_error:
+                            logger.warning(f"Scene {scene_num}: Failed to delete old video: {delete_error}")
+
                         all_files[old_file_idx] = new_files[0]
 
                     # Re-validate the new video
