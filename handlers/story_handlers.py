@@ -133,7 +133,7 @@ def develope_story(characters, setting, plot, number_of_scenes, duration_per_sce
         video_prompt_file = f"tmp/images/default/scene_prompt_{i}.txt"
         with open(video_prompt_file, "w") as f:
             f.write(scene["description"]) # f.write(scene["video_prompt"])
-        video_script_file = f"tmp/images/default/scene_script_{i}.txt"
+        video_script_file = f"tmp/images/default/scene_script_{i}.json"
         with open(video_script_file, "w") as f:
-            f.write(json.dumps(scene["scripts"]))
+            f.write(json.dumps(scene["scripts"], indent=4))
     return string_response

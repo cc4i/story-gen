@@ -17,8 +17,8 @@ def visual_storyboard_tab(sl_number_of_scenes):
                 storyboard_rows.append(row)
                 scene_images.append(gr.Image(label=f"Scene #{i+1}", type="filepath", scale=1, interactive=True))
                 with gr.Column(scale=2):
-                    scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", interactive=True))
-                    script_texts.append(gr.TextArea(label=f"Script #{i+1}", interactive=True))
+                    scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", max_lines=7, interactive=True))
+                    script_texts.append(gr.TextArea(label=f"Script #{i+1}", max_lines=7, interactive=True))
 
                     with gr.Row():
                          audio_file_path = gr.Dropdown(label=f"Audio #{i+1}", scale=3, allow_custom_value=True, interactive=True)

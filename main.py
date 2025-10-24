@@ -74,7 +74,7 @@ with gr.Blocks(theme=gr.themes.Glass(), title="Story GeN/Video ") as demo:
     def update_scripts(num_scenes, characters):
         for i in range(num_scenes):
             script_texts[i] = gr.update(visible=True)
-            with open(f"tmp/images/default/scene_script_{i+1}.txt", "r") as f:
+            with open(f"tmp/images/default/scene_script_{i+1}.json", "r") as f:
                 string_script = f.read()
                 script_texts[i] = gr.update(value=json.loads(string_script))
         
