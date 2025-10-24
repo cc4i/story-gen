@@ -20,6 +20,7 @@ from utils.config import (
     VIDEOS_DIR,
 )
 from models.config import DEFAULT_MODEL_ID
+from agents import IdeaGenerationAgent
 def save_characters(characters):
     with open(CHARACTERS_JSON, "w") as f:
         if isinstance(characters, str):
@@ -40,19 +41,47 @@ def save_plot(plot):
     with open(PLOT_TXT, "w") as f:
         f.write(plot)
 
-def generate_story(idea):
-    system_instruction, prompt = generate_story_prompt(idea)
-    history = ""
-    string_response = call_llm(system_instruction, prompt, history, DEFAULT_MODEL_ID)
-    json_response = json.loads(string_response)
-    characters = json_response["characters"]
-    setting = json_response["setting"]
-    plot = json_response["plot"]
+def generate_story(idea, style="Studio Ghibli", use_agent=True):
+    """
+    Generate story structure from user idea.
+
+    Args:
+        idea: User's story idea
+        style: Visual style for the story (default: "Studio Ghibli")
+        use_agent: If True, use ADK-based self-critique agent for improved results.
+                   If False, use original single-shot LLM approach.
+
+    Returns:
+        Tuple of (characters, setting, plot)
+    """
+    operation_id = str(uuid.uuid4())[:8]
+    logger.info(f"[{operation_id}] Generating story, use_agent={use_agent}, style={style}")
+
+    if use_agent:
+        # Use ADK-based agent with self-critique and refinement
+        logger.info(f"[{operation_id}] Using IdeaGenerationAgent for enhanced story generation")
+        agent = IdeaGenerationAgent(model_id=DEFAULT_MODEL_ID)
+        characters, setting, plot = agent.generate_story(idea, style)
+
+        # Log agent insights
+        critique_summary = agent.get_critique_summary()
+        logger.info(f"[{operation_id}] Agent iteration summary:\n{critique_summary}")
+    else:
+        # Original single-shot approach
+        logger.info(f"[{operation_id}] Using traditional single-shot generation")
+        system_instruction, prompt = generate_story_prompt(idea)
+        history = ""
+        string_response = call_llm(system_instruction, prompt, history, DEFAULT_MODEL_ID)
+        json_response = json.loads(string_response)
+        characters = json_response["characters"]
+        setting = json_response["setting"]
+        plot = json_response["plot"]
 
     save_characters(characters)
     save_setting(setting)
     save_plot(plot)
 
+    logger.info(f"[{operation_id}] Story generation completed successfully")
     return characters, setting, plot
 
 def update_story(idea, characters):

@@ -11,6 +11,12 @@ def idea_tab():
         with gr.Row():
             dd_style = gr.Dropdown(choices=["Studio Ghibli", "Anime", "Photorealistic", "Pencil Sketch", "Oil Painting", "Matte Painting"], label="Style", interactive=True, value="Studio Ghibli")
         with gr.Row():
+            cb_use_agent = gr.Checkbox(
+                label="🤖 Use AI Agent (Self-Critique & Refinement)",
+                value=True,
+                info="Enable automatic story improvement through iterative refinement"
+            )
+        with gr.Row():
             btn_random_idea = gr.Button("Genarate random idea")
             btn_generate_story = gr.Button("Generate story")
-    return ta_idea, dd_style, btn_random_idea, btn_generate_story
+    return ta_idea, dd_style, cb_use_agent, btn_random_idea, btn_generate_story

@@ -94,7 +94,7 @@ with gr.Blocks(
             gr.Textbox(value="", interactive=False, visible=False)
             # gr.Button("Logout", link="/logout", scale=1)
     # Tab 1: Idea Tab
-    ta_idea, dd_style, btn_random_idea, btn_generate_story = idea_tab()
+    ta_idea, dd_style, cb_use_agent, btn_random_idea, btn_generate_story = idea_tab()
     btn_random_idea.click(
         generate_random_idea,
         inputs=None,
@@ -113,13 +113,13 @@ with gr.Blocks(
         outputs=character_images
     )
     # Generate story now populates character fields
-    def populate_characters(idea):
+    def populate_characters(idea, style, use_agent):
         MAX_CHARACTERS = 6
-        character_list, setting, plot = generate_story(idea)
+        character_list, setting, plot = generate_story(idea, style=style, use_agent=use_agent)
         return show_story()
     generate_story_step1 = btn_generate_story.click(
         populate_characters,
-        inputs=[ta_idea],
+        inputs=[ta_idea, dd_style, cb_use_agent],
         outputs=[sl_number_of_characters] + character_rows + character_images + character_names + character_sexs + character_voices + character_descriptions + [ta_setting, ta_plot]
     )
     generate_story_step1.then(
@@ -128,14 +128,14 @@ with gr.Blocks(
         outputs=character_images
     )
     # Update the number of charaters and triggers to generating the new story
-    def update_character_count(number_of_characters, idea):
+    def update_character_count(number_of_characters, idea, style, use_agent):
         character_rows = update_character_visibility(number_of_characters)
-        characters, setting, plot = generate_story(idea + f" Number of characters: {number_of_characters}")
+        characters, setting, plot = generate_story(idea + f" Number of characters: {number_of_characters}", style=style, use_agent=use_agent)
         return show_story()
 
     update_character_step1=sl_number_of_characters.release(
         fn=update_character_count,
-        inputs=[sl_number_of_characters, ta_idea],
+        inputs=[sl_number_of_characters, ta_idea, dd_style, cb_use_agent],
         outputs=[sl_number_of_characters] + character_rows + character_images + character_names + character_sexs + character_voices + character_descriptions + [ta_setting, ta_plot],
         queue=False
     )
