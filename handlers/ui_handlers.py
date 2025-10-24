@@ -54,6 +54,21 @@ def show_images_and_prompts(number_of_scenes):
     # Pad with empty strings if fewer prompts than scenes are found
     padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
 
+    scene_script_files = []
+    if os.path.exists(path):
+        for file in sorted(os.listdir(path)):
+            if file.startswith("scene_script_") and file.endswith(".txt"):
+                scene_script_files.append(os.path.join(path, file))
+    
+    scene_scripts = []
+    for f in scene_script_files:
+        with open(f, "r") as file:
+            scene_scripts.append(file.read())
+    padded_scripts = (scene_scripts + [""] * MAX_SCENES)[:MAX_SCENES]
+
     # Return a single, flat list: all image paths, then all prompts
     # The order and length must match the `outputs` in the click event
-    return padded_images + padded_prompts
+    return padded_images + padded_prompts + padded_scripts
+
+def show_story_details():
+    pass
