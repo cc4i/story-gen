@@ -17,6 +17,12 @@ def idea_tab():
                 info="Enable automatic story improvement through iterative refinement"
             )
         with gr.Row():
+            cb_use_adk = gr.Checkbox(
+                label="🚀 Use Google ADK Agent (Advanced Multi-Agent System)",
+                value=True,
+                info="Enable ADK-based LoopAgent with specialized sub-agents for higher quality results"
+            )
+        with gr.Row():
             btn_random_idea = gr.Button("Genarate random idea")
             btn_generate_story = gr.Button("Generate story")
-    return ta_idea, dd_style, cb_use_agent, btn_random_idea, btn_generate_story
+    return ta_idea, dd_style, cb_use_agent, cb_use_adk, btn_random_idea, btn_generate_story

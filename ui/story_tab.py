@@ -58,10 +58,15 @@ def story_tab():
             )
 
         with gr.Row():
-            btn_developing = gr.Button("Developing")
+            cb_use_scene_adk = gr.Checkbox(
+                label="🚀 Use Google ADK Scene Development Agent (5-Agent Multi-Phase System)",
+                value=True,
+                info="Enable ADK-based scene development with quality validation and iterative refinement for 8.5-9.5/10 quality scores"
+            )
+
         with gr.Row():
-            ta_developed_story = gr.TextArea(label="Output: Story JSON", lines=10)
+            btn_developing = gr.Button("Developing", variant="primary")
 
     return (sl_number_of_characters, character_rows, character_images, character_names, character_sexs, character_voices, character_descriptions,
             btn_generate_characters, btn_update_story, ta_setting, ta_plot, sl_number_of_scenes,
-            sl_duration_per_scene, dd_story_model, btn_developing, ta_developed_story)
+            sl_duration_per_scene, dd_story_model, cb_use_scene_adk, btn_developing)

@@ -36,8 +36,37 @@ def visual_storyboard_v31_tab(sl_number_of_scenes):
                 value="true",
                 interactive=True
             )
+
+        # Quality Validation Controls
         with gr.Row():
-            btn_generate_videos_v31 = gr.Button("Generate videos")
-            
-    return scene_images_v31, scene_texts_v31, veo_model_id_v31, cb_generate_audio_v31, btn_generate_videos_v31, storyboard_rows_v31
+            cb_enable_quality_validation = gr.Checkbox(
+                label="🔍 Enable Video Quality Validation (AI Quality Agent)",
+                value=True,
+                info="Automatically validate and retry low-quality videos using 4-validator system. Adds 30-50% time but dramatically improves quality."
+            )
+            sl_quality_threshold = gr.Slider(
+                label="Quality Threshold",
+                minimum=6.0,
+                maximum=9.5,
+                value=8.0,
+                step=0.5,
+                info="Videos scoring below this will be retried (max 2 attempts)"
+            )
+
+        # Quality Report Display
+        with gr.Row():
+            quality_report = gr.DataFrame(
+                label="📊 Video Quality Report",
+                headers=["Scene", "Anatomy", "Consistency", "Technical", "Overall", "Status", "Retries"],
+                datatype=["number", "str", "str", "str", "str", "str", "number"],
+                interactive=False,
+                visible=False  # Hidden until validation runs
+            )
+
+        with gr.Row():
+            btn_generate_videos_v31 = gr.Button("Generate Videos", variant="primary")
+
+    return (scene_images_v31, scene_texts_v31, veo_model_id_v31, cb_generate_audio_v31,
+            cb_enable_quality_validation, sl_quality_threshold, quality_report,
+            btn_generate_videos_v31, storyboard_rows_v31)
 

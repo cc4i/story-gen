@@ -26,13 +26,13 @@ def generate_story_prompt(idea: str) -> Tuple[str, str]:
             "plot": "Description of the plot."
         }
         ```
-        3. The story structure must include characters (maximum 6 characters), a setting, and a plot.
+        3. The story structure must include characters (maximum 3 characters), a setting, and a plot.
         4. Each character in the `characters` array must be an object with the following attributes:
             - `name`: The name of the character.
             - `sex`: Must be either "Female" or "Male".
             - `voice`: Must be one of the following: "High-pitched", "Low", "Deep", "Squeaky", or "Booming".
             - `description`: A detailed description of the character, including their appearance, personality, style, etc.
-        5. The number of characters must be LESS THAN ***3***.
+        5. Create 2-3 characters for optimal visual storytelling (minimum 1, maximum 3).
         </constraints>
     """
 

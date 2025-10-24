@@ -17,7 +17,7 @@ VEO_PROJECT_ID=os.getenv("VEO_PROJECT_ID")
 
 PROJECT_ID = os.getenv("PROJECT_ID")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-DEFAULT_MODEL_ID = os.getenv("DEFAULT_MODEL_ID", "gemini-2.0-flash")
+DEFAULT_MODEL_ID = os.getenv("DEFAULT_MODEL_ID", "gemini-2.5-flash")
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 

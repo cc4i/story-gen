@@ -20,7 +20,8 @@ from utils.config import (
     VIDEOS_DIR,
 )
 from models.config import DEFAULT_MODEL_ID
-from agents import IdeaGenerationAgent
+from agents import IdeaGenerationAgent, IdeaGenerationAgentADK
+from agents.scene_development_agent_adk import SceneDevelopmentAgentADK
 def save_characters(characters):
     with open(CHARACTERS_JSON, "w") as f:
         if isinstance(characters, str):
@@ -41,26 +42,34 @@ def save_plot(plot):
     with open(PLOT_TXT, "w") as f:
         f.write(plot)
 
-def generate_story(idea, style="Studio Ghibli", use_agent=True):
+def generate_story(idea, style="Studio Ghibli", use_agent=True, use_adk=True):
     """
     Generate story structure from user idea.
 
     Args:
         idea: User's story idea
         style: Visual style for the story (default: "Studio Ghibli")
-        use_agent: If True, use ADK-based self-critique agent for improved results.
+        use_agent: If True, use self-critique agent for improved results.
                    If False, use original single-shot LLM approach.
+        use_adk: If True, use Google ADK-based agent (IdeaGenerationAgentADK).
+                 If False, use original agent (IdeaGenerationAgent).
+                 Only applies when use_agent=True.
 
     Returns:
         Tuple of (characters, setting, plot)
     """
     operation_id = str(uuid.uuid4())[:8]
-    logger.info(f"[{operation_id}] Generating story, use_agent={use_agent}, style={style}")
+    logger.info(f"[{operation_id}] Generating story, use_agent={use_agent}, use_adk={use_adk}, style={style}")
 
     if use_agent:
-        # Use ADK-based agent with self-critique and refinement
-        logger.info(f"[{operation_id}] Using IdeaGenerationAgent for enhanced story generation")
-        agent = IdeaGenerationAgent(model_id=DEFAULT_MODEL_ID)
+        # Use agent with self-critique and refinement
+        if use_adk:
+            logger.info(f"[{operation_id}] Using IdeaGenerationAgentADK (Google ADK-based) for enhanced story generation")
+            agent = IdeaGenerationAgentADK(model_id=DEFAULT_MODEL_ID)
+        else:
+            logger.info(f"[{operation_id}] Using IdeaGenerationAgent (original) for enhanced story generation")
+            agent = IdeaGenerationAgent(model_id=DEFAULT_MODEL_ID)
+
         characters, setting, plot = agent.generate_story(idea, style)
 
         # Log agent insights
@@ -187,7 +196,7 @@ def prepare_veo_prompt(story_json:list[dict], characters:list[dict], model_id:st
             - Dialog if any
 
             Notice:
-            - To differentiate between multiple characters in the images, use the most distinguish descriptive details vaiable.
+            - To differentiate between multiple characters in the images, use the most distinguish descriptive details variable.
             - Output as plain text as prompt without any explaination.
 
             Here is the scene description:
@@ -220,6 +229,7 @@ def developing_story(*args):
         args[34]: duration_per_scene (int)
         args[35]: model_id (str)
         args[36]: style (str)
+        args[37]: use_scene_adk (bool, optional) - If True, use SceneDevelopmentAgentADK
 
     Returns:
         list: [story_response] + flattened script_rows updates (144 values: 12 scenes * 3 lines * 4 fields)
@@ -240,10 +250,11 @@ def developing_story(*args):
     duration_per_scene = int(args[34])
     model_id = args[35]
     style = args[36]
+    use_scene_adk = args[37] if len(args) > 37 else True  # Default to True
     character_image_dict={}
 
-    logger.info(f"[{operation_id}] Starting story development: characters={number_of_characters}, scenes={number_of_scenes}, duration={duration_per_scene}s, style={style}, model={model_id}")
-    
+    logger.info(f"[{operation_id}] Starting story development: characters={number_of_characters}, scenes={number_of_scenes}, duration={duration_per_scene}s, style={style}, model={model_id}, use_scene_adk={use_scene_adk}")
+
     # Build characters string for the prompt
     characters = []
     for i in range(number_of_characters):
@@ -268,16 +279,41 @@ def developing_story(*args):
     save_plot(plot)
 
     # Generate the story development
-    system_instruction, prompt = develop_story_prompt(characters, setting, plot, number_of_scenes, duration_per_scene, style)
-    history = ""
-    logger.info(f"[{operation_id}] Calling LLM to develop story")
-    logger.debug(f"[{operation_id}] Story prompt: {prompt[:200]}...")
-    string_response = call_llm(system_instruction, prompt, history, model_id)
+    if use_scene_adk:
+        # Use ADK-based Scene Development Agent (5-agent, two-phase system)
+        logger.info(f"[{operation_id}] Using SceneDevelopmentAgentADK (Google ADK-based) for enhanced scene development")
+        scene_agent = SceneDevelopmentAgentADK(model_id=model_id)
 
-    # Save full string response to file
+        scenes = scene_agent.develop_scenes(
+            characters=characters,
+            setting=setting,
+            plot=plot,
+            number_of_scenes=number_of_scenes,
+            duration_per_scene=duration_per_scene,
+            style=style
+        )
+
+        # Convert ADK output to expected format
+        story_json = {
+            "story_scenes": scenes
+        }
+
+        # Log agent insights
+        critique_summary = scene_agent.get_critique_summary()
+        logger.info(f"[{operation_id}] Scene development agent summary:\n{critique_summary}")
+        logger.info(f"[{operation_id}] Best score: {scene_agent.state.best_score:.1f}/10")
+    else:
+        # Original single-shot approach
+        logger.info(f"[{operation_id}] Using traditional single-shot scene development")
+        system_instruction, prompt = develop_story_prompt(characters, setting, plot, number_of_scenes, duration_per_scene, style)
+        history = ""
+        logger.debug(f"[{operation_id}] Story prompt: {prompt[:200]}...")
+        string_response = call_llm(system_instruction, prompt, history, model_id)
+        story_json = json.loads(string_response)
+
+    # Save full story to file
     with open(STORY_JSON, "w") as f:
-        f.write(string_response)
-    story_json = json.loads(string_response)
+        f.write(json.dumps(story_json, indent=4))
     logger.info(f"[{operation_id}] Story developed successfully, saved to {STORY_JSON}")
 
     # Generate images and save prompts/scripts for each scene in "Visual Storyboard" Tab
