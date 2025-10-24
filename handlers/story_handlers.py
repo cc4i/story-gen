@@ -5,21 +5,10 @@ from utils.llm import call_llm
 from utils.logger import logger
 from utils.prompt_templates import generate_story_prompt, update_story_prompt, develop_story_prompt
 from utils.gen_image import gen_images
+from utils.save_files import save_characters, save_setting, save_plot
 from PIL import Image
 from io import BytesIO
 from handlers.ui_handlers import check_folder, clear_temp_files
-
-def save_characters(characters):
-    with open("tmp/images/characters/characters.txt", "w") as f:
-        f.write(characters)
-
-def save_setting(setting):
-    with open("tmp/images/default/setting.txt", "w") as f:
-        f.write(setting)
-
-def save_plot(plot):
-    with open("tmp/images/default/plot.txt", "w") as f:
-        f.write(plot)
 
 def generate_story(idea):
     system_instruction, prompt = generate_story_prompt(idea)
