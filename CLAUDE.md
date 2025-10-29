@@ -43,11 +43,11 @@ SECRET_KEY=<session-secret-key>
 
 The application follows a 5-tab workflow in `main.py`:
 
-1. **Idea Tab** (`ui/idea_tab.py`): User inputs story idea → generates characters, setting, plot
-2. **Story Tab** (`ui/story_tab.py`): Configure characters (1-6), setting, plot, scenes (1-12), duration (5-8s), style → develop detailed scene breakdowns
-3. **Visual Storyboard Tab** (`ui/visual_storyboard_tab.py`): Generate videos from scenes, optionally generate audio narration
-4. **Short Ingredients Tab** (`ui/short_ingredients_tab.py`): Review individual scene videos before merging
-5. **Big Thing Tab** (`ui/big_thing_tab.py`): View final merged video
+1. **✨ The Spark** (`ui/idea_tab.py`): User inputs story idea → generates characters, setting, plot
+2. **🎭 The Cast** (`ui/story_tab.py`): Configure characters (1-6), setting, plot, scenes (1-12), duration (5-8s), style → develop detailed scene breakdowns
+3. **🎬 The Shoot** (`ui/visual_storyboard_tab.py`): Generate videos from scenes, optionally generate audio narration
+4. **🎞️ The Dailies** (`ui/short_ingredients_tab.py`): Review individual scene videos before merging
+5. **🎊 Premiere Night** (`ui/big_thing_tab.py`): View final merged video
 
 ### Handler Layer
 

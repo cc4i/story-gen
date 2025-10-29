@@ -48,7 +48,7 @@ def string_to_pjson(json_string: str) -> Optional[str]:
         json.loads(json_str)
         return json_str
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON string: {str(e)}")
+        logger.debug(f"Response is not JSON format: {str(e)}")
         return None
     except Exception as e:
         logger.error(f"Error processing JSON string: {str(e)}")
@@ -132,7 +132,7 @@ def call_llm(
         # Convert response to JSON if possible
         result = string_to_pjson(response.text)
         if result is None:
-            logger.warning("Response was not valid JSON, returning raw text")
+            logger.info("LLM response is plain text (non-JSON), returning raw text")
             return response.text
 
         return result

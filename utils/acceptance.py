@@ -27,3 +27,40 @@ def to_snake_case(input_string):
     # Convert to lowercase
     s3 = s2.lower()
     return s3
+
+
+def to_snake_case_v2(name):
+    """
+    Converts a string to snake_case.
+    Handles CamelCase, PascalCase, spaces, and hyphens.
+    """
+    # 1. Replace any non-alphanumeric characters (except underscores) with spaces.
+    #    This helps normalize different separators (like !, @, #, etc.)
+    name = re.sub(r'[^a-zA-Z0-9_]', ' ', name)
+
+    # 2. Convert to snake_case from PascalCase or CamelCase
+    #    Insert an underscore before any uppercase letter that is not at the start
+    #    and is followed by a lowercase letter OR
+    #    is preceded by a lowercase letter/digit and followed by an uppercase letter/digit
+    name = re.sub(r'(?<!^)(?=[A-Z][a-z])', '_', name)
+    name = re.sub(r'(?<!^)(?=[A-Z][A-Z0-9_]*$)', '_', name) # for cases like 'HTMLTest' -> 'html_test'
+
+    # Handle numbers: insert underscore before a digit if preceded by a letter/underscore
+    name = re.sub(r'(?<=[a-zA-Z_])(?=[0-9])', '_', name)
+    # Handle numbers: insert underscore after a digit if followed by a letter/underscore
+    name = re.sub(r'(?<=[0-9])(?=[a-zA-Z_])', '_', name)
+
+
+    # 3. Replace spaces and hyphens with underscores
+    name = re.sub(r'[-\s]+', '_', name)
+
+    # 4. Convert the string to lowercase
+    name = name.lower()
+
+    # 5. Remove any leading/trailing underscores
+    name = name.strip('_')
+
+    # 6. Remove any multiple underscores
+    name = re.sub(r'_{2,}', '_', name)
+
+    return name

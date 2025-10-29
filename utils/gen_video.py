@@ -4,6 +4,7 @@ Video generation utilities using Google's Veo 2.0 model.
 
 import time
 import os
+import base64
 import uuid
 from typing import Dict, List, Optional, Tuple, Any
 import google.auth
@@ -109,7 +110,7 @@ def send_request_to_google_api(api_endpoint: str, data: Optional[Dict[str, Any]]
     """
     try:
         # Get access token calling API
-        creds, project = google.auth.default()
+        creds, _ = google.auth.default()
         auth_req = google.auth.transport.requests.Request()
         creds.refresh(auth_req)
         access_token = creds.token
@@ -125,6 +126,53 @@ def send_request_to_google_api(api_endpoint: str, data: Optional[Dict[str, Any]]
     except requests.exceptions.RequestException as e:
         logger.error(f"API request failed: {str(e)}")
         raise APIError(f"Failed to send request to Google API: {str(e)}")
+
+
+def compose_veo31_request(
+    prompt: str,
+    reference_image_paths: list[str],
+    output_gcs_uri: str,
+    seed: int,
+    aspect_ratio: str ="16:9",
+    sample_count: int = 1,
+    negative_prompt: str ="",
+    person_generation: str = "allow_adult",
+    duration_seconds: int = 8,
+    generate_audio: Optional[str] = None,
+    resolution: str = "1080p"
+) -> Dict[str, Any]:
+    
+    referenceImages = []
+    for reference_image_path in reference_image_paths:
+        with open(reference_image_path, "rb") as image_file:
+            binary_data = image_file.read()
+            base64_string = base64.b64encode(binary_data).decode('utf-8')
+            referenceImages.append({
+                "image": {
+                    "bytesBase64Encoded": base64_string,
+                    "mimeType": "image/png"
+                },
+                "referenceType": "asset"
+            })
+
+    instance = {
+        "prompt": prompt,
+        "referenceImages": referenceImages
+    }
+    return {
+            "instances": [instance],
+            "parameters": {
+                "aspectRatio": aspect_ratio,
+                "negativePrompt": negative_prompt,
+                "personGeneration": person_generation,
+                "resolution": resolution,
+                "storageUri": output_gcs_uri,
+                "sampleCount": sample_count,
+                "seed": seed,
+                "durationSeconds": duration_seconds,
+                "generateAudio": generate_audio.lower() == "true"
+            },
+        }
 
 
 def compose_videogen_request(
@@ -168,39 +216,59 @@ def compose_videogen_request(
         instance["image"] = {"gcsUri": image_uri, "mimeType": "png"}
     if image_uri_last:
         instance["lastFrame"] = {"gcsUri": image_uri_last, "mimeType": "png"}
-    
+
+    # Build parameters dict once
+    parameters = {
+        "storageUri": gcs_uri,
+        "sampleCount": sample_count,
+        "seed": seed,
+        "aspectRatio": aspect_ratio,
+        "negativePrompt": negative_prompt,
+        "personGeneration": person_generation,
+        "resolution": resolution,
+        "enhancePrompt": enhance_prompt.lower() == "true",
+        "durationSeconds": duration_seconds
+    }
+
+    # Conditionally add generateAudio
     if generate_audio:
-        return {
-            "instances": [instance],
-            "parameters": {
-                "storageUri": gcs_uri,
-                "sampleCount": sample_count,
-                "seed": seed,
-                "aspectRatio": aspect_ratio,
-                "negativePrompt": negative_prompt,
-                "personGeneration": person_generation,
-                "resolution": resolution,
-                "enhancePrompt": enhance_prompt.lower() == "true",
-                "durationSeconds": duration_seconds,
-                "generateAudio": generate_audio.lower() == "true"
-            },
-        }
-    else:
-        return {
-            "instances": [instance],
-            "parameters": {
-                "storageUri": gcs_uri,
-                "sampleCount": sample_count,
-                "seed": seed,
-                "aspectRatio": aspect_ratio,
-                "negativePrompt": negative_prompt,
-                "personGeneration": person_generation,
-                "resolution": resolution,
-                "enhancePrompt": enhance_prompt.lower() == "true",
-                "durationSeconds": duration_seconds
-            },
-        }
+        parameters["generateAudio"] = generate_audio.lower() == "true"
+
+    return {
+        "instances": [instance],
+        "parameters": parameters
+    }
     
+
+def _execute_video_generation(
+    model_id: str,
+    request: Dict[str, Any],
+    log_request: bool = True
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    Common helper function to execute video generation with a composed request.
+
+    Args:
+        model_id: The ID of the model to use
+        request: The composed request dictionary
+        log_request: Whether to log the full request (default True)
+
+    Returns:
+        Tuple containing:
+        - Operation response from Google API
+        - Dictionary containing request and response details
+
+    Raises:
+        APIError: If the API request fails
+    """
+    if log_request:
+        logger.info(f"Composed request: {json.dumps(request, indent=4)}")
+
+    resp = send_request_to_google_api(prediction_endpoint(model_id), request)
+    logger.info(f"Received initial response for operation: {resp}")
+
+    r_resp = fetch_operation(model_id, resp["name"])
+    return r_resp, {"req": request, "resp": r_resp}
 
 def fetch_operation(model_id: str, lro_name: str, itr: int = MAX_RETRIES) -> Dict[str, Any]:
     """
@@ -270,18 +338,47 @@ def text_to_video(
     """
     logger.info(f"model_id: {model_id}")
     logger.info(f"Starting text-to-video generation with prompt: {prompt}")
+
+    # Veo 2.0 doesn't support audio generation
     if "2.0" in model_id:
-        # handle logic for 2.0 model
         generate_audio = None
+
     req = compose_videogen_request(
-        prompt, None, None, output_gcs, seed, aspect_ratio, sample_count, 
+        prompt, None, None, output_gcs, seed, aspect_ratio, sample_count,
         negative_prompt, "allow_adult", enhance, durations, generate_audio, resolution
     )
-    logger.info(f"Composed request: {json.dumps(req, indent=4)}")
-    resp = send_request_to_google_api(prediction_endpoint(model_id), req)
-    logger.info(f"Received initial response for operation: {resp}")
-    r_resp = fetch_operation(model_id, resp["name"])
-    return r_resp, {"req": req, "resp": r_resp}
+    return _execute_video_generation(model_id, req)
+
+def image_to_video_v31(
+    model_id: str,
+    prompt: str,
+    reference_image_paths: list[str],
+    seed: int,
+    aspect_ratio: str,
+    sample_count: int,
+    output_gcs: str,
+    negative_prompt: str,
+    durations: int,
+    generate_audio: str,
+    resolution: str
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    logger.info(f"model_id: {model_id}")
+    logger.info(f"Starting image-to-video generation with prompt: {prompt}")
+
+    req = compose_veo31_request(
+        prompt=prompt,
+        reference_image_paths=reference_image_paths,
+        output_gcs_uri=output_gcs,
+        seed=seed,
+        aspect_ratio=aspect_ratio,
+        sample_count=sample_count,
+        negative_prompt=negative_prompt,
+        duration_seconds=durations,
+        generate_audio=generate_audio,
+        resolution=resolution
+    )
+    # Don't log full request due to large base64 encoded images
+    return _execute_video_generation(model_id, req, log_request=False)
 
 def image_to_video(
     model_id: str,
@@ -327,32 +424,24 @@ def image_to_video(
     """
     logger.info(f"model_id: {model_id}")
     logger.info(f"Starting image-to-video generation with prompt: {prompt}")
-    
+
+    # Determine last frame image and audio settings based on model version
+    last_frame = None
     if "2.0" in model_id:
-        # handle logic for 2.0 model
         logger.info(f"image_gcs: {image_gcs}")
         logger.info(f"image_gcs_last: {image_gcs_last}")
+        # Veo 2.0 doesn't support audio generation
         generate_audio = None
-        if image_gcs_last and image_gcs_last!="":
-            req = compose_videogen_request(
-                prompt, image_gcs, image_gcs_last, output_gcs, seed, aspect_ratio, sample_count,
-                negative_prompt, "allow_adult", enhance, durations, generate_audio, resolution
-            )
-        else:
-            req = compose_videogen_request(
-                prompt, image_gcs, None, output_gcs, seed, aspect_ratio, sample_count,
-                negative_prompt, "allow_adult", enhance, durations, generate_audio, resolution
-            )
-    else:
-        req = compose_videogen_request(
-            prompt, image_gcs, None, output_gcs, seed, aspect_ratio, sample_count,
-            negative_prompt, "allow_adult", enhance, durations, generate_audio, resolution
-        )
-    logger.info(f"Composed request: {json.dumps(req, indent=4)}")
-    resp = send_request_to_google_api(prediction_endpoint(model_id), req)
-    logger.info(f"Received initial response for operation: {resp}")
-    r_resp = fetch_operation(model_id, resp["name"])
-    return r_resp, {"req": req, "resp": r_resp}
+        # Only use last frame if provided and not empty
+        if image_gcs_last and image_gcs_last != "":
+            last_frame = image_gcs_last
+
+    # Single request composition
+    req = compose_videogen_request(
+        prompt, image_gcs, last_frame, output_gcs, seed, aspect_ratio, sample_count,
+        negative_prompt, "allow_adult", enhance, durations, generate_audio, resolution
+    )
+    return _execute_video_generation(model_id, req)
 
 def copy_gcs_file_to_local(gcs_uri: str, local_file_path: str) -> None:
     """
@@ -376,37 +465,6 @@ def copy_gcs_file_to_local(gcs_uri: str, local_file_path: str) -> None:
         logger.error(f"Error copying file: {str(e)}")
         raise StorageError(f"Failed to copy file from GCS: {str(e)}")
 
-def upload_local_file_to_gcs(bucket_name: str, sub_folder: str, local_file_path: str) -> str:
-    """
-    Uploads a local file to Google Cloud Storage.
-
-    Args:
-        bucket_name: Name of the GCS bucket
-        sub_folder: Subfolder path in the bucket
-        local_file_path: Path to the local file
-
-    Returns:
-        The GCS URI of the uploaded file
-
-    Raises:
-        StorageError: If the upload operation fails
-    """
-    try:
-        client = storage.Client(project=os.getenv("PROJECT_ID"))
-        bucket = client.bucket(bucket_name)
-
-        blob_name = to_snake_case(local_file_path.split("/")[-1])
-        if sub_folder:
-            blob_name = f"{sub_folder}/{blob_name}"
-        blob = bucket.blob(blob_name)
-        blob.upload_from_filename(local_file_path)
-        gcs_uri = f"gs://{bucket_name}/{blob_name}"
-        logger.info(f"File {local_file_path} uploaded to {gcs_uri}")
-        return gcs_uri
-    except Exception as e:
-        logger.error(f"Error uploading file: {str(e)}")
-        raise StorageError(f"Failed to upload file to GCS: {str(e)}")
-
 def download_videos(op: Dict[str, Any], whoami: str, seqence: str, loop_seamless: bool) -> List[str]:
     """
     Downloads generated videos from GCS to local storage.
@@ -426,7 +484,7 @@ def download_videos(op: Dict[str, Any], whoami: str, seqence: str, loop_seamless
     logger.info(f"op: {op}")
     logger.info("--------------------------------")
     logger.info(f"Starting video download for user: {whoami}")
-    local_path = f"{LOCAL_STORAGE}/{whoami}"
+    local_path = f"{LOCAL_STORAGE}/{whoami}/videos"
     logger.info(f"local_path: {local_path}")
 
     if not os.path.exists(local_path):
