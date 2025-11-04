@@ -10,6 +10,7 @@ def visual_storyboard_tab(sl_number_of_scenes):
         scene_texts = []
         scene_audios_dropdown = []
         scene_audios = []
+        script_texts = []
         character_list = []
 
         for i in range(max_scenes):
@@ -53,5 +54,5 @@ def visual_storyboard_tab(sl_number_of_scenes):
             btn_generate_audios = gr.Button("Generate audios(Optional)")
             btn_merge_audios = gr.Button("Merge audios(Optional)")
             
-    return scene_images, scene_texts, scene_audios_dropdown, scene_audios, character_list, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows
+    return scene_images, scene_texts, scene_audios_dropdown, scene_audios, script_texts, character_list, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows
 

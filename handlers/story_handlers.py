@@ -14,6 +14,7 @@ from handlers.ui_handlers import check_folder, clear_temp_files
 from utils.config import (
     CHARACTERS_DIR,
     VIDEOS_DIR,
+    STORY_JSON
 )
 from utils.save_files import save_characters, save_setting, save_plot, save_story
 from models.config import DEFAULT_MODEL_ID
