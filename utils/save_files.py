@@ -1,9 +1,11 @@
 import json
+import os
 from utils.config import (
     CHARACTERS_JSON,
     SETTING_TXT,
     PLOT_TXT,
     STORY_JSON,
+    VIDEOS_DIR
 )
 
 def save_characters(characters):
@@ -31,9 +33,9 @@ def save_story(story_json):
         f.write(json.dumps(story_json, indent=4))
 
 def save_prompt(scene_num, prompt):
-    with open(f"tmp/images/default/scene_prompt_{scene_num}.txt", "w") as f:
+    with open(os.path.join(VIDEOS_DIR, f"scene_prompt_{scene_num}.txt"), "w") as f:
         f.write(prompt)
 
 def save_script(scene_num, script):
-    with open(f"tmp/images/default/scene_script_{scene_num}.json", "w") as f:
+    with open(os.path.join(VIDEOS_DIR, f"scene_script_{scene_num}.json"), "w") as f:
         f.write(json.dumps(json.loads(script), indent=4))

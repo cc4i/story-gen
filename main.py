@@ -18,6 +18,7 @@ from handlers.ui_handlers import show_story_details, show_images_and_prompts, sh
 from utils.video_ts import merge_videos_moviepy
 from utils.config import VIDEOS_DIR
 from utils.status_helper import append_status, format_status_display
+from utils.save_files import save_script
 
 with gr.Blocks(
     theme=gr.themes.Glass(),
@@ -360,6 +361,19 @@ with gr.Blocks(
     )
     developing_story_step2 = developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts + script_texts)
     developing_story_step2.then(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31 + script_texts_v31)
+
+    # Update scripts
+    for i in range(12):
+        script_texts[i].input(
+            fn=lambda ta_script, id=i+1: save_script(id, ta_script),
+            inputs=[script_texts[i]],
+            outputs=None
+        )
+        script_texts_v31[i].input(
+            fn=lambda ta_script, id=i+1: save_script(id, ta_script),
+            inputs=[script_texts_v31[i]],
+            outputs=None
+        )
 
     # Video generation handlers
     btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio], outputs=[short_ingredients])
