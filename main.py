@@ -350,15 +350,6 @@ with gr.Blocks(
         inputs=[sl_number_of_characters] + character_names + character_sexs + character_voices + character_descriptions + [dd_style, status_messages],
         outputs=character_images + [status_messages, status_output]
     )
-
-    def update_scripts(num_scenes, characters):
-        for i in range(num_scenes):
-            script_texts[i] = gr.update(visible=True)
-            with open(f"tmp/images/default/scene_script_{i+1}.json", "r") as f:
-                string_script = f.read()
-                script_texts[i] = gr.update(value=json.loads(string_script))
-        
-        return script_texts
         
     # Developing story with status updates
     developing_story_step1 = btn_developing.click(

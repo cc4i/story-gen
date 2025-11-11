@@ -25,7 +25,7 @@ def generate_audio():
     total_dialogues = 0
 
     for file in os.listdir(VIDEOS_DIR):
-        if file.startswith("scene_script_") and file.endswith(".txt"):
+        if file.startswith("scene_script_") and file.endswith(".json"):
             logger.info(f"[{operation_id}] Processing script file: {file}")
             order = file.split(".")[0].split("_")[2]
             string_script = open(os.path.join(VIDEOS_DIR, file), "r").read()

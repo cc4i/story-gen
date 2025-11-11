@@ -351,7 +351,7 @@ def developing_story(*args):
         with open(video_prompt_file, "w") as f:
             f.write(json.dumps(scene, indent=4))
 
-        video_script_file = f"{VIDEOS_DIR}/scene_script_{i}.txt"
+        video_script_file = f"{VIDEOS_DIR}/scene_script_{i}.json"
         with open(video_script_file, "w") as f:
             f.write(json.dumps(scene["dialogue"], indent=4))
     ###
