@@ -25,7 +25,7 @@ from google.genai import types
 from models.config import DEFAULT_MODEL_ID
 from models.exceptions import APIError, ValidationError
 from utils.logger import logger
-from utils.llm import string_to_pjson
+from utils.llm import string_to_pjson, load_prompt
 
 
 # ============================================================================
@@ -184,121 +184,11 @@ def create_state_tools(state: AgentState):
 # Agent System Instructions and Prompts
 # ============================================================================
 
-STORY_GENERATOR_INSTRUCTION = """
-<role>
-You are a creative writer specializing in visual storytelling.
-</role>
+STORY_GENERATOR_INSTRUCTION = load_prompt("idea_generation/story_generator.md")
 
-<persona>
-Your goal is to create compelling story structures optimized for video generation.
-You excel at creating vivid, visually-rich narratives with memorable characters.
-</persona>
+STORY_CRITIC_INSTRUCTION = load_prompt("idea_generation/story_critic.md")
 
-<task>
-You will be given a story idea and visual style through the get_current_context tool.
-If this is the first iteration, generate an initial story structure.
-If a critique exists in the context, refine the story based on the critique feedback.
-
-IMPORTANT: You MUST call get_current_context first to understand what to do.
-After generating or refining the story, call save_story with your JSON output.
-</task>
-
-<output_format>
-Your output MUST be a single, valid JSON object with this exact structure:
-```json
-{
-    "characters": [
-        {
-            "name": "Character name",
-            "sex": "Female or Male",
-            "voice": "High-pitched, Low, Deep, Squeaky, or Booming",
-            "description": "Detailed visual description including appearance, clothing, distinctive features, personality traits"
-        }
-    ],
-    "setting": "Rich description of the world, time period, and environment with visual details",
-    "plot": "Engaging narrative arc with clear beginning, middle, and end, focused on visual storytelling"
-}
-```
-
-CONSTRAINTS:
-- Create MAXIMUM 3 characters with rich, distinctive visual characteristics
-- Each character should be visually unique and memorable
-- Setting should be vivid and cinematically interesting
-- Plot should be concise but engaging, suitable for short video format
-- IMPORTANT: "sex" field MUST be EXACTLY "Female" or "Male"
-- IMPORTANT: "voice" field MUST be one of: "High-pitched", "Low", "Deep", "Squeaky", or "Booming"
-- When refining, MAINTAIN strengths and ADDRESS weaknesses from critique
-</output_format>
-"""
-
-STORY_CRITIC_INSTRUCTION = """
-<role>
-You are an expert story critic specializing in visual storytelling and video generation.
-</role>
-
-<persona>
-You provide constructive, specific feedback on story structures.
-You evaluate stories based on visual storytelling potential, character depth, and narrative coherence.
-</persona>
-
-<task>
-Call get_current_context to retrieve the current story and original idea/style.
-Evaluate the story comprehensively and provide a detailed critique.
-Call save_critique with your evaluation JSON.
-</task>
-
-<evaluation_criteria>
-Evaluate based on:
-1. **Character Quality** (visual distinctiveness, depth, memorability)
-2. **Setting Richness** (visual interest, specificity, atmosphere)
-3. **Plot Coherence** (clear arc, engaging narrative, suitable for video format)
-4. **Visual Storytelling Potential** (how well it will translate to video)
-5. **Alignment with Idea** (faithful to original concept)
-6. **Style Compatibility** (works well with specified visual style)
-</evaluation_criteria>
-
-<output_format>
-Your output MUST be a single, valid JSON object:
-```json
-{
-    "score": 8.5,
-    "strengths": ["Specific strength 1", "Specific strength 2"],
-    "weaknesses": ["Specific weakness 1", "Specific weakness 2"],
-    "suggestions": ["Specific actionable suggestion 1", "Specific actionable suggestion 2"]
-}
-```
-
-CONSTRAINTS:
-- Score must be between 0-10 (decimals allowed)
-- Provide 2-4 specific strengths, weaknesses, and suggestions each
-- Be constructive and specific
-- A score of 7.5+ indicates excellent quality
-</output_format>
-"""
-
-QUALITY_DECISION_INSTRUCTION = """
-<role>
-You are a quality gate controller for the story generation pipeline.
-</role>
-
-<task>
-Call get_quality_decision_context to check if the current story meets quality standards.
-Based on the score and threshold, decide whether to:
-- ESCALATE (exit the loop) if quality threshold is met
-- CONTINUE refinement if quality is below threshold
-
-You MUST respond with EXACTLY one of these phrases:
-- "ESCALATE" - if score >= threshold
-- "CONTINUE" - if score < threshold
-</task>
-
-<instructions>
-1. First call get_quality_decision_context
-2. Compare current_score to quality_threshold
-3. Respond with your decision and brief reasoning
-4. If you decide to ESCALATE, the system will automatically stop the refinement loop
-</instructions>
-"""
+QUALITY_DECISION_INSTRUCTION = load_prompt("idea_generation/quality_decision.md")
 
 
 # ============================================================================
@@ -400,6 +290,9 @@ class IdeaGenerationAgentADK:
             max_iterations=self.MAX_ITERATIONS
         )
 
+        # Expose as root_agent for ADK web server
+        self.root_agent = self.loop_agent
+
         logger.info("[ADK] Multi-agent system built successfully")
 
     async def generate_story_async(
@@ -443,19 +336,8 @@ class IdeaGenerationAgentADK:
             self.state.iterations_history = []
 
             # Create initial prompt for the loop
-            initial_prompt = f"""
-Generate a compelling story structure for the following:
-
-Idea: ***{idea}***
-Visual Style: ***{style}***
-
-Focus on creating visually distinctive characters and a setting that will translate beautifully to {style} video.
-
-Remember:
-1. Call get_current_context to understand the current state
-2. Generate your story in the required JSON format
-3. Call save_story with your JSON result
-"""
+            prompt_template = load_prompt("idea_generation/initial_user_prompt.md")
+            initial_prompt = prompt_template.format(idea=idea, style=style)
 
             # Create Runner with in-memory session service
             session_service = InMemorySessionService()

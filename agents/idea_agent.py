@@ -16,10 +16,10 @@ from dataclasses import dataclass
 from google import genai
 from google.genai import types
 
-from models.config import DEFAULT_MODEL_ID, GEMINI_API_KEY
+from models.config import DEFAULT_MODEL_ID, GEMINI_API_KEY, PROJECT_ID, VERTEX_LOCATION
 from models.exceptions import APIError, ValidationError
 from utils.logger import logger
-from utils.llm import string_to_pjson
+from utils.llm import string_to_pjson, load_prompt
 
 
 @dataclass
@@ -68,8 +68,8 @@ class IdeaGenerationAgent:
         """
         self.model_id = model_id
         self.client = genai.Client(
-            api_key=GEMINI_API_KEY,
-            http_options={'api_version': 'v1alpha'}
+            vertexai=True, project=PROJECT_ID, location=VERTEX_LOCATION
+            # http_options={'api_version': 'v1alpha'}
         )
         self.iterations: List[StoryIteration] = []
 
@@ -128,48 +128,10 @@ class IdeaGenerationAgent:
         Returns:
             Dictionary with characters, setting, and plot
         """
-        system_instruction = """
-        <role>
-        You are a creative writer specializing in visual storytelling.
-        </role>
-        <persona>
-        Your goal is to create compelling story structures optimized for video generation.
-        You excel at creating vivid, visually-rich narratives with memorable characters.
-        </persona>
-        <constraints>
-        1. Your output MUST be a single, valid JSON object.
-        2. The JSON object must strictly follow this structure:
-        ```json
-        {
-            "characters": [
-                {
-                    "name": "Character name",
-                    "sex": "Female or Male",
-                    "voice": "High-pitched, Low, Deep, Squeaky, or Booming",
-                    "description": "Detailed visual description including appearance, clothing, distinctive features, personality traits"
-                }
-            ],
-            "setting": "Rich description of the world, time period, and environment with visual details",
-            "plot": "Engaging narrative arc with clear beginning, middle, and end, focused on visual storytelling"
-        }
-        ```
-        3. Create MAXIMUM 3 characters with rich, distinctive visual characteristics
-        4. Each character should be visually unique and memorable
-        5. Setting should be vivid and cinematically interesting
-        6. Plot should be concise but engaging, suitable for short video format
-        7. IMPORTANT: The "sex" field MUST be EXACTLY "Female" or "Male" - no other values are allowed
-        8. IMPORTANT: The "voice" field MUST be one of: "High-pitched", "Low", "Deep", "Squeaky", or "Booming"
-        </constraints>
-        """
+        system_instruction = load_prompt("idea_generation/story_generator.md")
 
-        prompt = f"""
-        Create a story structure for the following idea:
-
-        Idea: ***{idea}***
-        Visual Style: ***{style}***
-
-        Focus on creating visually distinctive characters and a setting that will translate beautifully to {style} video.
-        """
+        prompt_template = load_prompt("idea_generation/initial_story_user.md")
+        prompt = prompt_template.format(idea=idea, style=style)
 
         logger.info(f"[Agent] Generating initial story for idea: {idea[:50]}...")
         response = self._call_llm(system_instruction, prompt)
@@ -192,51 +154,10 @@ class IdeaGenerationAgent:
         Returns:
             CritiqueResult with score and feedback
         """
-        system_instruction = """
-        <role>
-        You are an expert story critic specializing in visual storytelling and video generation.
-        </role>
-        <persona>
-        You provide constructive, specific feedback on story structures.
-        You evaluate stories based on visual storytelling potential, character depth, and narrative coherence.
-        </persona>
-        <constraints>
-        1. Your output MUST be a single, valid JSON object.
-        2. The JSON object must follow this structure:
-        ```json
-        {
-            "score": 8.5,
-            "strengths": ["Specific strength 1", "Specific strength 2"],
-            "weaknesses": ["Specific weakness 1", "Specific weakness 2"],
-            "suggestions": ["Specific actionable suggestion 1", "Specific actionable suggestion 2"]
-        }
-        ```
-        3. Score must be between 0-10 (decimals allowed)
-        4. Provide 2-4 specific strengths, weaknesses, and suggestions each
-        </constraints>
-        """
+        system_instruction = load_prompt("idea_generation/story_critic.md")
 
-        prompt = f"""
-        Critique this story structure based on the original idea and visual style:
-
-        Original Idea: ***{idea}***
-        Visual Style: ***{style}***
-
-        Generated Story:
-        ```json
-        {json.dumps(story, indent=2)}
-        ```
-
-        Evaluate based on:
-        1. **Character Quality** (visual distinctiveness, depth, memorability)
-        2. **Setting Richness** (visual interest, specificity, atmosphere)
-        3. **Plot Coherence** (clear arc, engaging narrative, suitable for video format)
-        4. **Visual Storytelling Potential** (how well it will translate to video)
-        5. **Alignment with Idea** (faithful to original concept)
-        6. **Style Compatibility** (works well with {style})
-
-        Be specific and constructive. A score of 7.5+ indicates excellent quality.
-        """
+        prompt_template = load_prompt("idea_generation/critique_story_user.md")
+        prompt = prompt_template.format(idea=idea, style=style, story=json.dumps(story, indent=2))
 
         logger.info("[Agent] Critiquing story structure...")
         response = self._call_llm(system_instruction, prompt)
@@ -273,61 +194,22 @@ class IdeaGenerationAgent:
         Returns:
             Refined story structure
         """
-        system_instruction = """
-        <role>
-        You are a creative writer specializing in visual storytelling refinement.
-        </role>
-        <persona>
-        You excel at taking good stories and making them great by incorporating specific feedback.
-        You maintain the core vision while addressing weaknesses.
-        </persona>
-        <constraints>
-        1. Your output MUST be a single, valid JSON object.
-        2. The JSON must follow the same structure as before:
-        ```json
-        {
-            "characters": [...],
-            "setting": "...",
-            "plot": "..."
-        }
-        ```
-        3. MAINTAIN the core concept and strong elements
-        4. ADDRESS all weaknesses and incorporate suggestions
-        5. Keep character limit at maximum 3
-        6. Preserve character names unless specifically problematic
-        7. IMPORTANT: Each character's "sex" field MUST be EXACTLY "Female" or "Male" - no other values allowed
-        8. IMPORTANT: Each character's "voice" field MUST be one of: "High-pitched", "Low", "Deep", "Squeaky", or "Booming"
-        </constraints>
-        """
+        system_instruction = load_prompt("idea_generation/story_refiner.md")
 
         weaknesses_str = "\n".join(f"- {w}" for w in critique.weaknesses)
         suggestions_str = "\n".join(f"- {s}" for s in critique.suggestions)
         strengths_str = "\n".join(f"- {s}" for s in critique.strengths)
 
-        prompt = f"""
-        Refine this story structure based on the critique feedback:
-
-        Original Idea: ***{idea}***
-        Visual Style: ***{style}***
-
-        Current Story:
-        ```json
-        {json.dumps(story, indent=2)}
-        ```
-
-        Critique Score: {critique.score}/10
-
-        Strengths (PRESERVE these):
-        {strengths_str}
-
-        Weaknesses (ADDRESS these):
-        {weaknesses_str}
-
-        Suggestions (INCORPORATE these):
-        {suggestions_str}
-
-        Create an improved version that addresses the weaknesses while maintaining the strengths.
-        """
+        prompt_template = load_prompt("idea_generation/refine_story_user.md")
+        prompt = prompt_template.format(
+            idea=idea,
+            style=style,
+            story=json.dumps(story, indent=2),
+            score=critique.score,
+            strengths=strengths_str,
+            weaknesses=weaknesses_str,
+            suggestions=suggestions_str
+        )
 
         logger.info(f"[Agent] Refining story based on critique (score: {critique.score})...")
         response = self._call_llm(system_instruction, prompt)

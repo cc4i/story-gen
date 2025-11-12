@@ -21,8 +21,9 @@ from pathlib import Path
 
 from google.genai import types, Client
 
-from models.config import DEFAULT_MODEL_ID, GEMINI_API_KEY
+from models.config import DEFAULT_MODEL_ID, GEMINI_API_KEY, PROJECT_ID, VERTEX_LOCATION
 from utils.logger import logger
+from utils.llm import call_llm, load_prompt
 from utils.video_analysis import (
     extract_key_frames,
     extract_character_frames,
@@ -124,206 +125,15 @@ class VideoQualityState:
 # Agent Instructions
 # ============================================================================
 
-ANATOMY_VALIDATOR_INSTRUCTION = """
-<role>
-You are an anatomy validation specialist for AI-generated videos.
-</role>
+ANATOMY_VALIDATOR_INSTRUCTION = load_prompt("quality_validation/anatomy_validator.md")
 
-<task>
-Analyze video frames to detect anatomical errors and deformities.
-Focus on: limb count, body proportions, facial features, and morphing artifacts.
-</task>
+CONSISTENCY_VALIDATOR_INSTRUCTION = load_prompt("quality_validation/consistency_validator.md")
 
-<validation_criteria>
-1. **Limb Count**: Each human character must have exactly 2 arms, 2 legs
-2. **Hand/Finger Count**: 2 hands per human, 5 fingers per hand (unless obscured)
-3. **Body Proportions**: Realistic human proportions (head:body ~1:7)
-4. **Stability**: Character features don't morph/change mid-video
-5. **No Extras**: No extra limbs, faces, or body parts
-6. **Facial Features**: Eyes, nose, mouth properly positioned and stable
-</validation_criteria>
+TECHNICAL_VALIDATOR_INSTRUCTION = load_prompt("quality_validation/technical_validator.md")
 
-<output_format>
-Your output MUST be a JSON object:
-```json
-{
-  "anatomy_score": 8.5,
-  "issues": [
-    {
-      "frame_number": 5,
-      "timestamp": "2.3s",
-      "character": "Alice",
-      "issue": "Three hands visible instead of two",
-      "severity": "critical"
-    }
-  ],
-  "pass_validation": true,
-  "suggestions": [
-    "Add negative prompt: 'extra limbs, deformed hands, multiple hands'",
-    "Reduce character overlap to prevent limb confusion"
-  ],
-  "frame_count": 10
-}
-```
+QUALITY_DECISION_INSTRUCTION = load_prompt("quality_validation/quality_decision.md")
 
-CRITICAL RULES:
-- Score 0-10 (10 = perfect anatomy)
-- Pass if score >= 7.5 AND no critical issues
-- Severity levels: "minor" (cosmetic), "major" (noticeable), "critical" (unusable)
-- Be thorough but fair - minor occlusion is acceptable
-</output_format>
-"""
-
-CONSISTENCY_VALIDATOR_INSTRUCTION = """
-<role>
-You are a character consistency validation specialist.
-</role>
-
-<task>
-Verify that characters in the video match reference images and descriptions.
-Check consistency of appearance, clothing, and distinctive features.
-</task>
-
-<validation_criteria>
-1. **Reference Match**: Character appearance matches reference image
-2. **Physical Traits**: Hair color, facial features, body type match
-3. **Clothing**: Outfit matches reference (unless plot requires change)
-4. **Distinctive Features**: Glasses, scars, jewelry preserved
-5. **Description Match**: Visual matches text description
-</validation_criteria>
-
-<output_format>
-```json
-{
-  "consistency_score": 8.0,
-  "character_matches": {
-    "Alice": {
-      "reference_similarity": 0.88,
-      "issues": ["Hair slightly darker than reference"],
-      "severity": "minor"
-    },
-    "Bob": {
-      "reference_similarity": 0.95,
-      "issues": [],
-      "severity": "none"
-    }
-  },
-  "cross_scene_consistency": 8.5,
-  "pass_validation": true,
-  "suggestions": [
-    "Add explicit character description: 'blonde hair, blue dress'",
-    "Strengthen reference image influence in prompt"
-  ]
-}
-```
-
-CRITICAL RULES:
-- Score 0-10 based on reference image similarity
-- Pass if score >= 7.0 AND no major character mismatches
-- Compare each character against their reference image
-- Allow minor variations (lighting, angle) but flag major changes
-</output_format>
-"""
-
-TECHNICAL_VALIDATOR_INSTRUCTION = """
-<role>
-You are a technical video quality validator.
-</role>
-
-<task>
-Assess technical quality: resolution, motion smoothness, duration, visual clarity.
-</task>
-
-<validation_criteria>
-1. **Visual Clarity**: No excessively blurry/pixelated frames
-2. **Motion Smoothness**: Fluid movement, no jittering
-3. **Duration Accuracy**: Within ±0.5s of expected duration
-4. **Lighting**: Stable lighting throughout (no sudden shifts)
-5. **No Artifacts**: No glitches, cuts, or temporal artifacts
-</validation_criteria>
-
-<output_format>
-```json
-{
-  "technical_score": 9.0,
-  "duration_actual": 8.1,
-  "duration_expected": 8.0,
-  "motion_quality": 0.92,
-  "visual_clarity": 0.88,
-  "issues": ["Minor blur in frames 12-15"],
-  "pass_validation": true
-}
-```
-
-CRITICAL RULES:
-- Score 0-10 for overall technical quality
-- Pass if score >= 7.5 AND duration within tolerance
-- Motion quality and clarity are 0.0-1.0 scores
-- Be realistic - perfect quality is rare, focus on "good enough"
-</output_format>
-"""
-
-QUALITY_DECISION_INSTRUCTION = """
-<role>
-You are the final quality decision maker and prompt refinement expert.
-</role>
-
-<task>
-Aggregate validation results, calculate weighted score, decide ACCEPT/RETRY/FAIL,
-and generate improved prompts for retries.
-</task>
-
-<decision_thresholds>
-- **ACCEPT**: Overall score >= threshold (default 8.0) OR (score >= 6.5 AND retry_count >= 1)
-- **RETRY**: Score < threshold AND retry_count < 2 AND fixable issues
-- **FAIL**: retry_count >= 2 OR unfixable critical anatomical issues
-</decision_thresholds>
-
-<weighted_scoring>
-Overall Score = (anatomy_score * 0.40) + (consistency_score * 0.35) + (technical_score * 0.25)
-
-Anatomy is weighted highest because anatomical errors are most noticeable.
-</weighted_scoring>
-
-<prompt_refinement_rules>
-1. **Anatomy Issues** → Add negative prompts:
-   - "extra limbs, deformed hands, multiple faces"
-   - "distorted body, mutated fingers"
-
-2. **Consistency Issues** → Strengthen references:
-   - Prefix: "Exactly matching the reference character shown"
-   - Add explicit physical details from character description
-
-3. **Motion Issues** → Simplify:
-   - "Simple, slow, smooth camera movement"
-   - "Minimal character motion, focus on expressions"
-
-4. **Multiple Issues** → Combine strategies:
-   - Apply all relevant improvements
-   - Simplify overall complexity
-</prompt_refinement_rules>
-
-<output_format>
-```json
-{
-  "decision": "RETRY",
-  "overall_score": 7.2,
-  "weighted_breakdown": {
-    "anatomy": 7.0,
-    "consistency": 6.8,
-    "technical": 8.0
-  },
-  "retry_count": 1,
-  "improved_prompt": "Enhanced prompt with explicit fixes...",
-  "improvement_notes": [
-    "Added negative prompt for anatomy",
-    "Strengthened character reference matching",
-    "Simplified motion complexity"
-  ]
-}
-```
-</output_format>
-"""
+PROMPT_REFINEMENT_AGENT_INSTRUCTION = load_prompt("quality_validation/prompt_refinement.md")
 
 
 # ============================================================================
@@ -348,20 +158,16 @@ def analyze_frames_with_gemini(
     Returns:
         Parsed JSON response from model
     """
-    client = Client(api_key=GEMINI_API_KEY)
+    client = Client(vertexai=True, project=PROJECT_ID, location=VERTEX_LOCATION)
 
     try:
         # Build prompt with context
-        prompt = f"""
-{instruction}
-
-CONTEXT:
-{json.dumps(context, indent=2)}
-
-FRAMES: I have provided {len(frames)} frames from the video for your analysis.
-
-Please analyze these frames and provide your validation results in the specified JSON format.
-"""
+        prompt_template = load_prompt("quality_validation/gemini_analysis_user.md")
+        prompt = prompt_template.format(
+            instruction=instruction,
+            context=json.dumps(context, indent=2),
+            frame_count=len(frames)
+        )
 
         # Build contents: frames first, then text prompt
         contents = list(frames) + [prompt]
@@ -672,18 +478,36 @@ def make_quality_decision(
     elif has_critical_anatomy and retry_count < 2:
         # Critical anatomy issues - always retry
         decision = "RETRY"
-        improved_prompt, improvement_notes = refine_prompt(
-            original_prompt, anatomy_result, consistency_result, technical_result
-        )
-        logger.info(f"[QualityDecision] RETRY - critical anatomy issues detected")
+        # Try LLM-powered refinement, fallback to rule-based if it fails
+        try:
+            improved_prompt, improvement_notes = refine_prompt_with_llm(
+                original_prompt, anatomy_result, consistency_result, technical_result, retry_count
+            )
+            logger.info(f"[QualityDecision] RETRY - critical anatomy issues detected (using LLM refinement)")
+        except Exception as e:
+            logger.warning(f"[QualityDecision] LLM refinement failed, using rule-based fallback: {str(e)}")
+            improved_prompt, improvement_notes = refine_prompt_rule_based(
+                original_prompt, anatomy_result, consistency_result, technical_result
+            )
+            improvement_notes.append("Used rule-based fallback due to LLM failure")
+            logger.info(f"[QualityDecision] RETRY - critical anatomy issues detected (using rule-based fallback)")
 
     elif overall_score < quality_threshold and retry_count < 2:
         # Below threshold - retry with improvements
         decision = "RETRY"
-        improved_prompt, improvement_notes = refine_prompt(
-            original_prompt, anatomy_result, consistency_result, technical_result
-        )
-        logger.info(f"[QualityDecision] RETRY - score {overall_score:.1f} < threshold {quality_threshold}")
+        # Try LLM-powered refinement, fallback to rule-based if it fails
+        try:
+            improved_prompt, improvement_notes = refine_prompt_with_llm(
+                original_prompt, anatomy_result, consistency_result, technical_result, retry_count
+            )
+            logger.info(f"[QualityDecision] RETRY - score {overall_score:.1f} < threshold {quality_threshold} (using LLM refinement)")
+        except Exception as e:
+            logger.warning(f"[QualityDecision] LLM refinement failed, using rule-based fallback: {str(e)}")
+            improved_prompt, improvement_notes = refine_prompt_rule_based(
+                original_prompt, anatomy_result, consistency_result, technical_result
+            )
+            improvement_notes.append("Used rule-based fallback due to LLM failure")
+            logger.info(f"[QualityDecision] RETRY - score {overall_score:.1f} < threshold {quality_threshold} (using rule-based fallback)")
 
     return QualityDecision(
         decision=decision,
@@ -695,14 +519,211 @@ def make_quality_decision(
     )
 
 
-def refine_prompt(
+def build_refinement_context(
+    original_prompt: str,
+    anatomy_result: AnatomyValidationResult,
+    consistency_result: ConsistencyValidationResult,
+    technical_result: TechnicalValidationResult,
+    retry_count: int
+) -> Dict:
+    """
+    Build comprehensive context for LLM-powered prompt refinement.
+
+    Extracts all relevant validation details including:
+    - Validator suggestions (currently unused in rule-based approach!)
+    - Character-specific consistency issues
+    - Severity-prioritized anatomy issues
+    - Technical quality metrics
+
+    Args:
+        original_prompt: Original video generation prompt
+        anatomy_result: Anatomy validation results
+        consistency_result: Consistency validation results
+        technical_result: Technical validation results
+        retry_count: Current retry attempt number
+
+    Returns:
+        Dictionary with comprehensive validation context for LLM
+    """
+    # Extract character-specific consistency issues
+    failing_characters = []
+    for char_name, match_data in consistency_result.character_matches.items():
+        similarity = match_data.get("reference_similarity", 1.0)
+        if similarity < 0.85:
+            failing_characters.append({
+                "name": char_name,
+                "similarity": similarity,
+                "issues": match_data.get("issues", []),
+                "severity": match_data.get("severity", "unknown")
+            })
+
+    # Prioritize anatomy issues by severity
+    critical_anatomy = [i for i in anatomy_result.issues if i.get("severity") == "critical"]
+    major_anatomy = [i for i in anatomy_result.issues if i.get("severity") == "major"]
+    minor_anatomy = [i for i in anatomy_result.issues if i.get("severity") == "minor"]
+
+    # Determine overall priority level
+    if critical_anatomy:
+        priority = "critical"
+    elif major_anatomy or anatomy_result.anatomy_score < 7.0:
+        priority = "high"
+    elif not anatomy_result.pass_validation or not consistency_result.pass_validation:
+        priority = "moderate"
+    else:
+        priority = "low"
+
+    context = {
+        "original_prompt": original_prompt,
+        "retry_count": retry_count,
+        "priority": priority,
+
+        "anatomy_validation": {
+            "score": anatomy_result.anatomy_score,
+            "passed": anatomy_result.pass_validation,
+            "critical_issues": critical_anatomy,
+            "major_issues": major_anatomy,
+            "minor_issues": minor_anatomy,
+            "total_issues": len(anatomy_result.issues),
+            "suggestions": anatomy_result.suggestions  # KEY: Now used by LLM!
+        },
+
+        "consistency_validation": {
+            "score": consistency_result.consistency_score,
+            "passed": consistency_result.pass_validation,
+            "failing_characters": failing_characters,  # NEW: Character-specific issues
+            "cross_scene_consistency": consistency_result.cross_scene_consistency,
+            "suggestions": consistency_result.suggestions  # KEY: Now used by LLM!
+        },
+
+        "technical_validation": {
+            "score": technical_result.technical_score,
+            "passed": technical_result.pass_validation,
+            "motion_quality": technical_result.motion_quality,
+            "visual_clarity": technical_result.visual_clarity,
+            "duration_actual": technical_result.duration_actual,
+            "duration_expected": technical_result.duration_expected,
+            "issues": technical_result.issues
+        }
+    }
+
+    return context
+
+
+def refine_prompt_with_llm(
+    original_prompt: str,
+    anatomy_result: AnatomyValidationResult,
+    consistency_result: ConsistencyValidationResult,
+    technical_result: TechnicalValidationResult,
+    retry_count: int = 0,
+    model_id: str = DEFAULT_MODEL_ID
+) -> Tuple[str, List[str]]:
+    """
+    Use LLM to intelligently refine prompt based on validation results.
+
+    This function leverages an LLM agent to:
+    - Analyze validation failures holistically
+    - Incorporate validator suggestions (previously unused!)
+    - Generate character-specific improvements
+    - Create targeted, context-aware refinements
+
+    Args:
+        original_prompt: Original prompt that generated the video
+        anatomy_result: Anatomy validation results
+        consistency_result: Consistency validation results
+        technical_result: Technical validation results
+        retry_count: Current retry attempt (0 = first)
+        model_id: Gemini model to use for refinement
+
+    Returns:
+        Tuple of (improved_prompt, improvement_notes)
+
+    Raises:
+        Exception: If LLM refinement fails (caller should use fallback)
+    """
+    logger.info(f"[PromptRefinement] Using LLM-powered refinement (retry={retry_count})")
+
+    try:
+        # Build comprehensive context with all validation details
+        context = build_refinement_context(
+            original_prompt, anatomy_result, consistency_result,
+            technical_result, retry_count
+        )
+
+        # Log what we're working with
+        logger.debug(f"[PromptRefinement] Context built: priority={context['priority']}, "
+                    f"anatomy_score={anatomy_result.anatomy_score:.1f}, "
+                    f"consistency_score={consistency_result.consistency_score:.1f}, "
+                    f"technical_score={technical_result.technical_score:.1f}")
+
+        # Create refinement prompt for LLM
+        refinement_prompt_template = load_prompt("quality_validation/refinement_user.md")
+        refinement_prompt = refinement_prompt_template.format(context=json.dumps(context, indent=2))
+
+        # Call LLM with prompt refinement agent instruction
+        logger.debug(f"[PromptRefinement] Calling LLM with model: {model_id}")
+        response_json = call_llm(
+            system_instruction=PROMPT_REFINEMENT_AGENT_INSTRUCTION,
+            prompt=refinement_prompt,
+            history="",
+            model_id=model_id
+        )
+
+        # Parse LLM response
+        result = json.loads(response_json)
+
+        # Extract improved prompt
+        improved_prompt = result.get("improved_prompt", original_prompt)
+
+        # Build improvement notes from LLM response
+        improvement_notes = []
+
+        # Add structured improvements
+        for improvement in result.get("improvements_applied", []):
+            category = improvement.get("category", "general")
+            issue = improvement.get("issue_addressed", "unknown")
+            fix = improvement.get("improvement", "applied fix")
+            improvement_notes.append(f"[{category}] {issue}: {fix}")
+
+        # Add suggestions used
+        suggestions_used = result.get("suggestions_used", [])
+        if suggestions_used:
+            improvement_notes.append(f"Validator suggestions incorporated: {len(suggestions_used)}")
+
+        # Add simplifications if any
+        simplifications = result.get("simplifications", [])
+        if simplifications:
+            for simp in simplifications:
+                improvement_notes.append(f"[simplification] {simp}")
+
+        # Add metadata
+        confidence = result.get("confidence", "N/A")
+        expected_improvement = result.get("expected_score_improvement", "N/A")
+        improvement_notes.append(f"LLM confidence: {confidence}, Expected improvement: {expected_improvement}")
+
+        logger.info(f"[PromptRefinement] LLM refinement complete: {len(improvement_notes)} improvements applied")
+        logger.debug(f"[PromptRefinement] Suggestions used: {suggestions_used}")
+
+        return improved_prompt, improvement_notes
+
+    except json.JSONDecodeError as e:
+        logger.error(f"[PromptRefinement] Failed to parse LLM JSON response: {str(e)}")
+        raise Exception(f"Invalid JSON from LLM refinement: {str(e)}")
+    except Exception as e:
+        logger.error(f"[PromptRefinement] LLM refinement failed: {str(e)}")
+        raise  # Let caller handle fallback
+
+
+def refine_prompt_rule_based(
     original_prompt: str,
     anatomy_result: AnatomyValidationResult,
     consistency_result: ConsistencyValidationResult,
     technical_result: TechnicalValidationResult
 ) -> Tuple[str, List[str]]:
     """
-    Generate improved prompt based on validation results.
+    Generate improved prompt based on validation results using rule-based approach.
+
+    This is the original, static rule-based refinement function.
+    It serves as a fallback when LLM-powered refinement fails.
 
     Args:
         original_prompt: Original prompt that generated the video

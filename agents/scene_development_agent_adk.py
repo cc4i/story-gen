@@ -779,6 +779,15 @@ class SceneDevelopmentAgentADK:
             max_iterations=self.MAX_ITERATIONS
         )
 
+        # Create top-level orchestrator that combines setup and refinement
+        self.root_agent = SequentialAgent(
+            name="scene_development_orchestrator",
+            sub_agents=[
+                self.setup_agent,
+                self.refinement_loop
+            ]
+        )
+
         logger.info("[ADK-Scene] Multi-agent system built: 2 setup agents + 3 refinement agents")
 
     async def develop_scenes_async(
@@ -1030,3 +1039,4 @@ Continue until quality threshold (8.0/10) is met or max iterations reached.
                 lines.append("")
 
         return "\n".join(lines)
+

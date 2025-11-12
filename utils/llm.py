@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any
 from google import genai
 from google.genai import types
 
-from models.config import DEFAULT_MODEL_ID, GEMINI_API_KEY
+from models.config import DEFAULT_MODEL_ID, GEMINI_API_KEY, PROJECT_ID, VERTEX_LOCATION
 from models.exceptions import APIError, ValidationError
 
 from utils.logger import logger
@@ -85,8 +85,8 @@ def call_llm(
 
         # Initialize client
         client = genai.Client(
-            api_key=GEMINI_API_KEY,
-            http_options={'api_version': 'v1alpha'}
+            vertexai=True, project=PROJECT_ID, location=VERTEX_LOCATION
+            # http_options={'api_version': 'v1beta'}
         )
 
         # Configure generation parameters
@@ -142,4 +142,14 @@ def call_llm(
         raise APIError(f"Failed to generate content: {str(e)}")
 
 
+from pathlib import Path
 
+def load_prompt(file_name: str) -> str:
+    """Loads a prompt from the 'prompts' directory."""
+    base_path = Path(__file__).parent.parent / "prompts"
+    prompt_path = base_path / file_name
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Prompt file not found at: {prompt_path}")

@@ -4,7 +4,7 @@ import mimetypes
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
-from models.config import GEMINI_API_KEY
+from models.config import GEMINI_API_KEY, PROJECT_ID, VERTEX_LOCATION
 from utils.logger import logger
 import random
 import time
@@ -41,8 +41,8 @@ def save_binary_file(file_name, data):
 
 def generate_audio_by_gemini(message, gender, order, character_name, start_time, voice_name, model_id="gemini-2.5-pro-preview-tts"):
     client = genai.Client(
-        api_key=GEMINI_API_KEY
-        # vertexai=True, project="cloud-llm-preview3", location="us-central1"
+        vertexai=True, project=PROJECT_ID, location=VERTEX_LOCATION
+        # api_key=GEMINI_API_KEY
     )
     model = model_id
     contents = [

@@ -16,6 +16,7 @@ VEO_STORAGE_BUCKET = os.getenv("VEO_STORAGE_BUCKET", "veo-storage-bucket")
 VEO_PROJECT_ID=os.getenv("VEO_PROJECT_ID")
 
 PROJECT_ID = os.getenv("PROJECT_ID")
+VERTEX_LOCATION = os.getenv("VERTEX_LOCATION", "us-central1")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DEFAULT_MODEL_ID = os.getenv("DEFAULT_MODEL_ID", "gemini-2.5-flash")
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')

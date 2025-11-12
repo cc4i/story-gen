@@ -2,11 +2,11 @@
 import os
 from google import genai
 from google.genai import types
-from models.config import GEMINI_API_KEY
+from models.config import GEMINI_API_KEY, PROJECT_ID, VERTEX_LOCATION
 from utils.logger import logger
 
 def gen_images(model_id, prompt, negative_prompt, number_of_images, aspect_ratio, is_enhance):
-    client = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version': 'v1'})
+    client = genai.Client(vertexai=True, project=PROJECT_ID, location=VERTEX_LOCATION)
     logger.info(f"Image generation: model={model_id}, count={number_of_images}, aspect_ratio={aspect_ratio}, enhance={is_enhance}")
     logger.debug(f"Prompt: {prompt}, negative_prompt: {negative_prompt}")
     if is_enhance=="yes":
@@ -61,7 +61,7 @@ def gen_images_by_banana(prompt, negative_prompt="", number_of_images=1, aspect_
     from PIL import Image
     from io import BytesIO
 
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    client = genai.Client(vertexai=True, project=PROJECT_ID, location=VERTEX_LOCATION)
 
     # Validate aspect ratio
     valid_aspect_ratios = ["1:1", "2:3", "3:2", "4:3", "5:4", "9:16", "16:9", "21:9"]

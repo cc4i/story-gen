@@ -143,9 +143,9 @@ with gr.Blocks(
         *handler_args, current_messages = args
 
         # Parse key info from args for status messages
-        number_of_scenes = int(handler_args[31])  # arg[33] in original
-        style = handler_args[34]  # arg[36] in original
-        use_scene_adk = handler_args[35] if len(handler_args) > 35 else True  # arg[37]
+        number_of_scenes = int(handler_args[33])  # sl_number_of_scenes
+        style = handler_args[36]  # dd_style
+        use_scene_adk = handler_args[37] if len(handler_args) > 37 else True  # cb_use_scene_adk
 
         # Initial status
         messages = append_status(

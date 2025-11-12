@@ -1,4 +1,5 @@
 
+import gradio as gr
 import os
 import json
 import random
@@ -85,11 +86,16 @@ def generate_video_v31(*args):
 
 
 
-def generate_video(chosen_veo_model_id, is_generate_audio):
+def generate_video(chosen_veo_model_id, is_generate_audio, progress=gr.Progress()):
+    progress(0, desc="Starting video generation...")
     clear_temp_files(VIDEOS_DIR, "_0.mp4")
 
     all_files = []
-    for file in os.listdir(VIDEOS_DIR):
+    scene_files = sorted([f for f in os.listdir(VIDEOS_DIR) if f.startswith("scene_") and f.endswith(".png")])
+    total_scenes = len(scene_files)
+
+    for i, file in enumerate(scene_files):
+        progress((i + 1) / total_scenes, desc=f"Generating video for scene {i + 1}/{total_scenes}")
         if file.startswith("scene_") and file.endswith(".png"):
             image_path = os.path.join(VIDEOS_DIR, file)
             sequence = file.split('.')[0].split('_')[1]
@@ -157,7 +163,7 @@ def show_merged_videos():
     return MERGED_VIDEO_MP4
 
 
-def generate_video_v31_with_validation(*args):
+def generate_video_v31_with_validation(*args, progress=gr.Progress()):
     """
     Generate videos from v31 storyboard with quality validation and auto-retry.
 
@@ -345,18 +351,20 @@ def generate_video_v31_with_validation(*args):
     logger.info(f"Quality Validation Complete: {quality_report['summary']}")
 
     # Convert quality report to DataFrame format for Gradio
-    report_data = [
-        [
-            r["scene"],
-            r["anatomy"],
-            r["consistency"],
-            r["technical"],
-            r["overall_score"],
-            r["decision"],
-            0  # Retry count - would need to track this
+    report_data = []
+    if "detailed_reports" in quality_report:
+        report_data = [
+            [
+                r["scene"],
+                r["anatomy"],
+                r["consistency"],
+                r["technical"],
+                r["overall_score"],
+                r["decision"],
+                0  # Retry count - would need to track this
+            ]
+            for r in quality_report["detailed_reports"]
         ]
-        for r in quality_report["detailed_reports"]
-    ]
 
     all_files.sort(key=get_sequence_number)
     return all_files, report_data
