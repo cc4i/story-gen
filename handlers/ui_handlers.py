@@ -253,7 +253,7 @@ def show_images_and_prompts_v31(number_of_scenes):
     scene_script_files = []
     if os.path.exists(path):
         for file in sorted(os.listdir(path)):
-            if file.startswith("scene_script_") and file.endswith(".json"):
+            if file.startswith("v31_scene_script_") and file.endswith(".json"):
                 scene_script_files.append(os.path.join(path, file))
     
     scene_scripts = []

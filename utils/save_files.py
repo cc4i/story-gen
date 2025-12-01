@@ -36,6 +36,8 @@ def save_prompt(scene_num, prompt):
     with open(os.path.join(VIDEOS_DIR, f"scene_prompt_{scene_num}.txt"), "w") as f:
         f.write(prompt)
 
-def save_script(scene_num, script):
-    with open(os.path.join(VIDEOS_DIR, f"scene_script_{scene_num}.json"), "w") as f:
-        f.write(json.dumps(json.loads(script), indent=4))
+def save_script(scene_num, script, is_v31):
+    v31 = "v31_" if is_v31 else ""
+    if script:
+        with open(os.path.join(VIDEOS_DIR, f"{v31}scene_script_{scene_num}.json"), "w") as f:
+            f.write(json.dumps(json.loads(script), indent=4))

@@ -10,6 +10,7 @@ from handlers.ui_handlers import clear_temp_files
 from utils.config import STORY_JSON, VIDEOS_DIR, MERGED_VIDEO_MP4
 from utils.llm import call_llm
 from utils.logger import logger
+from utils.save_files import save_script
 from agents.video_quality_agent import VideoQualityAgent
 
 
@@ -19,7 +20,7 @@ def generate_video_v31(*args):
     Generate videos from v31 storyboard.
 
     Args:
-        *args: First 12 are scene images, next 12 are scene texts,
+        *args: First 12 are scene images, next 12 are scene texts, next 12 are script texts
                then model_id, then is_generate_audio
     """
     clear_temp_files(VIDEOS_DIR, "_0.mp4")
@@ -28,8 +29,9 @@ def generate_video_v31(*args):
     # Split args into components
     scene_images_v31 = list(args[:MAX_SCENES])
     scene_texts_v31 = list(args[MAX_SCENES:MAX_SCENES*2])
-    chosen_veo_model_id = args[MAX_SCENES*2]
-    is_generate_audio = args[MAX_SCENES*2 + 1]
+    script_texts_v31 = list(args[MAX_SCENES*2:MAX_SCENES*3])
+    chosen_veo_model_id = args[MAX_SCENES*3]
+    is_generate_audio = args[MAX_SCENES*3 + 1]
 
     # clear_temp_files(VIDEOS_DIR, "_v31_0.mp4")
     all_files = []
@@ -85,7 +87,11 @@ def generate_video_v31(*args):
 
 
 
-def generate_video(chosen_veo_model_id, is_generate_audio):
+def generate_video(chosen_veo_model_id, is_generate_audio, *args):
+    script_texts = list(args)
+    for i in range(12):
+        save_script(i+1, script_texts[i], False)
+
     clear_temp_files(VIDEOS_DIR, "_0.mp4")
 
     all_files = []
@@ -162,7 +168,7 @@ def generate_video_v31_with_validation(*args):
     Generate videos from v31 storyboard with quality validation and auto-retry.
 
     Args:
-        *args: First 12 are scene images, next 12 are scene texts,
+        *args: First 12 are scene images, next 12 are scene texts, next 12 are script_texts
                then model_id, then is_generate_audio, then enable_validation,
                then quality_threshold
 
@@ -174,10 +180,11 @@ def generate_video_v31_with_validation(*args):
     # Split args into components
     scene_images_v31 = list(args[:MAX_SCENES])
     scene_texts_v31 = list(args[MAX_SCENES:MAX_SCENES*2])
-    chosen_veo_model_id = args[MAX_SCENES*2]
-    is_generate_audio = args[MAX_SCENES*2 + 1]
-    enable_validation = args[MAX_SCENES*2 + 2] if len(args) > MAX_SCENES*2 + 2 else True
-    quality_threshold = args[MAX_SCENES*2 + 3] if len(args) > MAX_SCENES*2 + 3 else 8.0
+    script_texts_v31 = list(args[MAX_SCENES*2:MAX_SCENES*3])
+    chosen_veo_model_id = args[MAX_SCENES*3]
+    is_generate_audio = args[MAX_SCENES*3 + 1]
+    enable_validation = args[MAX_SCENES*3 + 2] if len(args) > MAX_SCENES*2 + 2 else True
+    quality_threshold = args[MAX_SCENES*3 + 3] if len(args) > MAX_SCENES*2 + 3 else 8.0
 
     logger.info(f"Video generation v3.1 with validation: model={chosen_veo_model_id}, "
                 f"audio={is_generate_audio}, validation={enable_validation}, "
@@ -186,8 +193,12 @@ def generate_video_v31_with_validation(*args):
     # If validation disabled, use original function
     if not enable_validation:
         logger.info("Quality validation disabled - using standard generation")
-        all_files = generate_video_v31(*args[:MAX_SCENES*2 + 2])
+        all_files = generate_video_v31(*args[:MAX_SCENES*3 + 2])
         return all_files, None
+
+    # Save scripts
+    for i in range(12):
+        save_script(i+1, script_texts_v31[i], True)
 
     # Load character references and scene data
     character_refs = load_character_references()

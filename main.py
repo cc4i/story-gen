@@ -362,24 +362,11 @@ with gr.Blocks(
     developing_story_step2 = developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts + script_texts)
     developing_story_step2.then(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31 + script_texts_v31)
 
-    # Update scripts
-    for i in range(12):
-        script_texts[i].input(
-            fn=lambda ta_script, id=i+1: save_script(id, ta_script),
-            inputs=[script_texts[i]],
-            outputs=None
-        )
-        script_texts_v31[i].input(
-            fn=lambda ta_script, id=i+1: save_script(id, ta_script),
-            inputs=[script_texts_v31[i]],
-            outputs=None
-        )
-
     # Video generation handlers
-    btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio], outputs=[short_ingredients])
+    btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio] + script_texts, outputs=[short_ingredients])
     btn_generate_videos_v31.click(
         generate_video_v31_with_validation,
-        inputs=scene_images_v31 + scene_texts_v31 + [veo_model_id_v31, cb_generate_audio_v31, cb_enable_quality_validation, sl_quality_threshold],
+        inputs=scene_images_v31 + scene_texts_v31 + script_texts_v31 + [veo_model_id_v31, cb_generate_audio_v31, cb_enable_quality_validation, sl_quality_threshold],
         outputs=[short_ingredients, quality_report]
     )
     btn_generate_audios.click(generate_audio, inputs=None, outputs=scene_audios_dropdown)

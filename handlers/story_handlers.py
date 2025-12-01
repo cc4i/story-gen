@@ -354,6 +354,10 @@ def developing_story(*args):
         video_script_file = f"{VIDEOS_DIR}/scene_script_{i}.json"
         with open(video_script_file, "w") as f:
             f.write(json.dumps(scene["dialogue"], indent=4))
+        
+        video_script_file_v31 = f"{VIDEOS_DIR}/v31_scene_script_{i}.json"
+        with open(video_script_file_v31, "w") as f:
+            f.write(json.dumps(scene["dialogue"], indent=4))
     ###
 
     # Generate images and save prompts for each scene in "Visual Storyboard v31" Tab
