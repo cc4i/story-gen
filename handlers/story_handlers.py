@@ -378,13 +378,13 @@ def developing_story(*args):
             generated_image_data = gen_images_by_banana(prompt=scene_image_prompt)[0]
 
         image = Image.open(BytesIO(generated_image_data))
-        image.save(f"{VIDEOS_DIR}/scene_v31_{i}.png")
-        logger.info(f"[{operation_id}] Scene v31 {i}: Saved to scene_v31_{i}.png")
+        image.save(f"{VIDEOS_DIR}/v31_scene_{i}.png")
+        logger.info(f"[{operation_id}] Scene v31 {i}: Saved to v31_scene_{i}.png")
 
     logger.info(f"[{operation_id}] Generating Veo prompts for {len(story_json['story_scenes'])} scenes")
     veo_prompts = prepare_veo_prompt(story_json["story_scenes"], characters, model_id)
     for i, vp in enumerate(veo_prompts,1):
-        video_prompt_v31_file = f"{VIDEOS_DIR}/scene_prompt_v31_{i}.txt"
+        video_prompt_v31_file = f"{VIDEOS_DIR}/v31_scene_prompt_{i}.txt"
         with open(video_prompt_v31_file, "w") as f:
             f.write(vp)
     ###
