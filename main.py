@@ -14,10 +14,11 @@ from handlers.idea_handlers import generate_random_idea, load_idea
 from handlers.story_handlers import generate_story, update_story, developing_story, generate_character_images
 from handlers.video_handlers import generate_video, generate_video_v31, generate_video_v31_with_validation, show_generated_videos, show_merged_videos
 from handlers.audio_handlers import generate_audio, show_generated_audios, merge_audios
-from handlers.ui_handlers import show_images_and_prompts, show_images_and_prompts_v31, play_audio, update_character_visibility, show_story
+from handlers.ui_handlers import show_story_details, show_images_and_prompts, show_images_and_prompts_v31, play_audio, update_character_visibility, show_story
 from utils.video_ts import merge_videos_moviepy
 from utils.config import VIDEOS_DIR
 from utils.status_helper import append_status, format_status_display
+from utils.save_files import save_script
 
 with gr.Blocks(
     theme=gr.themes.Glass(),
@@ -143,9 +144,9 @@ with gr.Blocks(
         *handler_args, current_messages = args
 
         # Parse key info from args for status messages
-        number_of_scenes = int(handler_args[31])  # arg[33] in original
-        style = handler_args[34]  # arg[36] in original
-        use_scene_adk = handler_args[35] if len(handler_args) > 35 else True  # arg[37]
+        number_of_scenes = int(handler_args[33])
+        style = handler_args[36]
+        use_scene_adk = handler_args[37] if len(handler_args) > 35 else True
 
         # Initial status
         messages = append_status(
@@ -183,12 +184,12 @@ with gr.Blocks(
      ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_story_model, cb_use_scene_adk, btn_developing) = story_tab()
 
     # Tab 3: Visual Storyboard Tab
-    (scene_images, scene_texts, scene_audios_dropdown, scene_audios,
+    (scene_images, scene_texts, scene_audios_dropdown, scene_audios, script_texts,
      character_list, veo_model_id, cb_generate_audio, btn_generate_videos,
      btn_generate_audios, btn_merge_audios, storyboard_rows) = visual_storyboard_tab(sl_number_of_scenes)
 
     # Tab 4: Visual Storyboard v31 Tab
-    (scene_images_v31, scene_texts_v31, veo_model_id_v31, cb_generate_audio_v31,
+    (scene_images_v31, scene_texts_v31, script_texts_v31, veo_model_id_v31, cb_generate_audio_v31,
      cb_enable_quality_validation, sl_quality_threshold, quality_report,
      btn_generate_videos_v31, storyboard_rows_v31) = visual_storyboard_v31_tab(sl_number_of_scenes)
 
@@ -350,7 +351,7 @@ with gr.Blocks(
         inputs=[sl_number_of_characters] + character_names + character_sexs + character_voices + character_descriptions + [dd_style, status_messages],
         outputs=character_images + [status_messages, status_output]
     )
-
+        
     # Developing story with status updates
     developing_story_step1 = btn_developing.click(
         developing_story_with_status,
@@ -358,14 +359,14 @@ with gr.Blocks(
                [ta_setting, ta_plot, sl_number_of_scenes, sl_duration_per_scene, dd_story_model, dd_style, cb_use_scene_adk, status_messages],
         outputs=[status_messages, status_output]
     )
-    developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
-    developing_story_step1.then(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31)
+    developing_story_step2 = developing_story_step1.then(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts + script_texts)
+    developing_story_step2.then(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31 + script_texts_v31)
 
     # Video generation handlers
-    btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio], outputs=[short_ingredients])
+    btn_generate_videos.click(generate_video, inputs=[veo_model_id, cb_generate_audio] + script_texts, outputs=[short_ingredients])
     btn_generate_videos_v31.click(
         generate_video_v31_with_validation,
-        inputs=scene_images_v31 + scene_texts_v31 + [veo_model_id_v31, cb_generate_audio_v31, cb_enable_quality_validation, sl_quality_threshold],
+        inputs=scene_images_v31 + scene_texts_v31 + script_texts_v31 + [veo_model_id_v31, cb_generate_audio_v31, cb_enable_quality_validation, sl_quality_threshold],
         outputs=[short_ingredients, quality_report]
     )
     btn_generate_audios.click(generate_audio, inputs=None, outputs=scene_audios_dropdown)
@@ -375,8 +376,8 @@ with gr.Blocks(
     # Load the existed images and prompts if any
     demo.load(load_idea, inputs=None, outputs=[ta_idea])
     demo.load(show_story, inputs=None, outputs=[sl_number_of_characters] + character_rows + character_images + character_names + character_sexs + character_voices + character_descriptions + [ta_setting] + [ta_plot])
-    demo.load(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts)
-    demo.load(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31)
+    demo.load(show_images_and_prompts, inputs=[sl_number_of_scenes], outputs=scene_images + scene_texts + script_texts)
+    demo.load(show_images_and_prompts_v31, inputs=[sl_number_of_scenes], outputs=scene_images_v31 + scene_texts_v31 + script_texts_v31)
     demo.load(show_generated_videos, inputs=None, outputs=[short_ingredients])
     demo.load(show_generated_audios, inputs=None, outputs=scene_audios_dropdown)
     demo.load(show_merged_videos, inputs=None, outputs=[merged_video])

@@ -12,35 +12,14 @@ from PIL import Image
 from io import BytesIO
 from handlers.ui_handlers import check_folder, clear_temp_files
 from utils.config import (
-    CHARACTERS_JSON,
-    SETTING_TXT,
-    PLOT_TXT,
-    STORY_JSON,
     CHARACTERS_DIR,
     VIDEOS_DIR,
+    STORY_JSON
 )
+from utils.save_files import save_characters, save_setting, save_plot, save_story
 from models.config import DEFAULT_MODEL_ID
 from agents import IdeaGenerationAgent, IdeaGenerationAgentADK
 from agents.scene_development_agent_adk import SceneDevelopmentAgentADK
-def save_characters(characters):
-    with open(CHARACTERS_JSON, "w") as f:
-        if isinstance(characters, str):
-            char_list = []
-            for line in characters.split('\n'):
-                if line.strip():
-                    name, desc = line.split(':', 1)
-                    char_list.append({"name": name.strip(), "description": desc.strip()})
-            json.dump(char_list, f, indent=4)
-        else:
-            json.dump(characters, f, indent=4)
-
-def save_setting(setting):
-    with open(SETTING_TXT, "w") as f:
-        f.write(setting)
-
-def save_plot(plot):
-    with open(PLOT_TXT, "w") as f:
-        f.write(plot)
 
 def generate_story(idea, style="Studio Ghibli", use_agent=True, use_adk=True):
     """
@@ -312,8 +291,7 @@ def developing_story(*args):
         story_json = json.loads(string_response)
 
     # Save full story to file
-    with open(STORY_JSON, "w") as f:
-        f.write(json.dumps(story_json, indent=4))
+    save_story(story_json)
     logger.info(f"[{operation_id}] Story developed successfully, saved to {STORY_JSON}")
 
     # Generate images and save prompts/scripts for each scene in "Visual Storyboard" Tab
@@ -373,8 +351,12 @@ def developing_story(*args):
         with open(video_prompt_file, "w") as f:
             f.write(json.dumps(scene, indent=4))
 
-        video_script_file = f"{VIDEOS_DIR}/scene_script_{i}.txt"
+        video_script_file = f"{VIDEOS_DIR}/scene_script_{i}.json"
         with open(video_script_file, "w") as f:
+            f.write(json.dumps(scene["dialogue"], indent=4))
+        
+        video_script_file_v31 = f"{VIDEOS_DIR}/v31_scene_script_{i}.json"
+        with open(video_script_file_v31, "w") as f:
             f.write(json.dumps(scene["dialogue"], indent=4))
     ###
 

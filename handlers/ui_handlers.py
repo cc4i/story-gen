@@ -1,4 +1,4 @@
-
+import json
 import gradio as gr
 import os
 import re
@@ -157,7 +157,19 @@ def show_images_and_prompts(number_of_scenes):
     logger.info(f"Loaded {len(generated_scene_prompts)} scene prompts")
     padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
 
-    return padded_images + padded_prompts
+    scene_script_files = []
+    if os.path.exists(path):
+        for file in sorted(os.listdir(path)):
+            if file.startswith("scene_script_") and file.endswith(".json"):
+                scene_script_files.append(os.path.join(path, file))
+
+    scene_scripts = []
+    for f in scene_script_files:
+        with open(f, "r") as file:
+            scene_scripts.append(file.read())
+    padded_scripts = (scene_scripts + [""] * MAX_SCENES)[:MAX_SCENES]
+
+    return padded_images + padded_prompts + padded_scripts
 
 def show_images_and_prompts_v31(number_of_scenes):
     MAX_SCENES = 12
@@ -238,4 +250,21 @@ def show_images_and_prompts_v31(number_of_scenes):
     logger.info(f"Loaded {len(generated_scene_prompts)} v31 scene prompts with {len(references_image_files)} reference image sets")
     padded_prompts = (generated_scene_prompts + [""] * MAX_SCENES)[:MAX_SCENES]
 
-    return padded_images + padded_prompts
+    scene_script_files = []
+    if os.path.exists(path):
+        for file in sorted(os.listdir(path)):
+            if file.startswith("v31_scene_script_") and file.endswith(".json"):
+                scene_script_files.append(os.path.join(path, file))
+    
+    scene_scripts = []
+    for f in scene_script_files:
+        with open(f, "r") as file:
+            scene_scripts.append(file.read())
+    padded_scripts = (scene_scripts + [""] * MAX_SCENES)[:MAX_SCENES]
+
+    # Return a single, flat list: all image paths, then all prompts
+    # The order and length must match the `outputs` in the click event
+    return padded_images + padded_prompts + padded_scripts
+
+def show_story_details():
+    pass

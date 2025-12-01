@@ -8,6 +8,7 @@ def visual_storyboard_v31_tab(sl_number_of_scenes):
         storyboard_rows_v31 = []
         scene_images_v31 = []
         scene_texts_v31 = []
+        script_texts_v31 = []
 
         for i in range(max_scenes):
             with gr.Row(visible=(i < sl_number_of_scenes.value)) as row:
@@ -15,6 +16,7 @@ def visual_storyboard_v31_tab(sl_number_of_scenes):
                 scene_images_v31.append(gr.Gallery(label=f"Scene #{i+1}: references"))
                 with gr.Column(scale=2):
                     scene_texts_v31.append(gr.TextArea(label=f"Prompt #{i+1}", lines=10, interactive=True))
+                    script_texts_v31.append(gr.TextArea(label=f"Script #{i+1}", max_lines=7, interactive=True))
 
         sl_number_of_scenes.change(
             fn=update_storyboard_visibility,
@@ -66,7 +68,7 @@ def visual_storyboard_v31_tab(sl_number_of_scenes):
         with gr.Row():
             btn_generate_videos_v31 = gr.Button("Generate Videos", variant="primary")
 
-    return (scene_images_v31, scene_texts_v31, veo_model_id_v31, cb_generate_audio_v31,
+    return (scene_images_v31, scene_texts_v31, script_texts_v31, veo_model_id_v31, cb_generate_audio_v31,
             cb_enable_quality_validation, sl_quality_threshold, quality_report,
             btn_generate_videos_v31, storyboard_rows_v31)
 

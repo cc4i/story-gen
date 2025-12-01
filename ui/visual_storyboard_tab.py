@@ -10,6 +10,7 @@ def visual_storyboard_tab(sl_number_of_scenes):
         scene_texts = []
         scene_audios_dropdown = []
         scene_audios = []
+        script_texts = []
         character_list = []
 
         for i in range(max_scenes):
@@ -17,7 +18,9 @@ def visual_storyboard_tab(sl_number_of_scenes):
                 storyboard_rows.append(row)
                 scene_images.append(gr.Image(label=f"Scene #{i+1}", type="filepath", scale=1, interactive=True))
                 with gr.Column(scale=2):
-                    scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", lines=6, interactive=True))
+                    scene_texts.append(gr.TextArea(label=f"Prompt #{i+1}", max_lines=7, interactive=True))
+                    script_texts.append(gr.TextArea(label=f"Script #{i+1}", max_lines=7, interactive=True))
+
                     with gr.Row():
                          audio_file_path = gr.Dropdown(label=f"Audio #{i+1}", scale=3, allow_custom_value=True, interactive=True)
                          audio_file_player = gr.Audio(type="filepath", interactive=False, scale=1)
@@ -51,5 +54,5 @@ def visual_storyboard_tab(sl_number_of_scenes):
             btn_generate_audios = gr.Button("Generate audios(Optional)")
             btn_merge_audios = gr.Button("Merge audios(Optional)")
             
-    return scene_images, scene_texts, scene_audios_dropdown, scene_audios, character_list, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows
+    return scene_images, scene_texts, scene_audios_dropdown, scene_audios, script_texts, character_list, veo_model_id, cb_generate_audio, btn_generate_videos, btn_generate_audios, btn_merge_audios, storyboard_rows
 
