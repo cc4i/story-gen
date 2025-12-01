@@ -109,6 +109,7 @@ def generate_video(chosen_veo_model_id, is_generate_audio, *args):
             logger.debug(f"Scene {sequence} prompt: {video_prompt[:200]}...")
 
             # generate video
+            print(image_path)
             image_gcs_path = upload_image(image_path, "default")
             output_gcs = f"gs://{VEO_STORAGE_BUCKET}/generated-for-marketing-short"
             op, rr = image_to_video(
@@ -223,7 +224,8 @@ def generate_video_v31_with_validation(*args):
                 for j, image in enumerate(images):
                     image_path = image[0] if isinstance(image, tuple) else image
                     image_paths.append(image_path)
-
+            
+            print(image_paths)
             if prompt_txt:
                 output_gcs = f"gs://{VEO_STORAGE_BUCKET}/generated-for-marketing-short"
                 logger.info(f"Scene {i+1}/{MAX_SCENES}: Generating video")

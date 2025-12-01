@@ -177,7 +177,7 @@ def show_images_and_prompts_v31(number_of_scenes):
     
     def get_scene_v31_number(path):
         filename = os.path.basename(path)
-        match = re.search(r'scene_v31_(\d+)\.png', filename)
+        match = re.search(r'v31_scene_(\d+)\.png', filename)
         return int(match.group(1)) if match else 0
 
     def get_character_images(num, data_json):
@@ -197,7 +197,7 @@ def show_images_and_prompts_v31(number_of_scenes):
     scene_v31_files = []
     if os.path.exists(path):
         for file in os.listdir(path):
-            if re.match(r'^scene_v31_\d+\.png$', file):
+            if re.match(r'^v31_scene_\d+\.png$', file):
                 scene_v31_files.append(file)
 
     # Sort by scene number
@@ -219,13 +219,13 @@ def show_images_and_prompts_v31(number_of_scenes):
     scene_prompt_files = []
     if os.path.exists(path):
         for file in os.listdir(path):
-            if re.match(r'^scene_prompt_v31_\d+\.txt$', file):
+            if re.match(r'^v31_scene_prompt_\d+\.txt$', file):
                 scene_prompt_files.append(os.path.join(path, file))
 
     # Sort by scene number
     def get_prompt_v31_number(path):
         filename = os.path.basename(path)
-        match = re.search(r'scene_prompt_v31_(\d+)\.txt', filename)
+        match = re.search(r'v31_scene_prompt_(\d+)\.txt', filename)
         return int(match.group(1)) if match else 0
 
     scene_prompt_files.sort(key=get_prompt_v31_number)
